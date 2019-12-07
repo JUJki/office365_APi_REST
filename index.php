@@ -1,9 +1,13 @@
 <?php
 
-require __DIR__ . '/vendor/autoload.php';
+use Dotenv\Dotenv;
 
-error_reporting(-1);
-ini_set('display_errors', 1);
+require __DIR__ . '/vendor/autoload.php';
+$dotenv = Dotenv::createImmutable(__DIR__);
+$dotenv->load();
+
+error_reporting(($_ENV['ENVIRONEMENT'] === 'development') ? -1 : 0);
+ini_set('display_errors', ($_ENV['ENVIRONEMENT'] === 'development') ? 1 : 0);
 if (session_status() == PHP_SESSION_NONE) {
   session_start();
 }
