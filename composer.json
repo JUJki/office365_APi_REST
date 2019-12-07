@@ -2,7 +2,9 @@
     "name": "api/office365api",
     "require": {
         "league/oauth2-client": "2.4.1",
-        "microsoft/microsoft-graph": "1.12.0"
+        "microsoft/microsoft-graph": "1.12.0",
+        "guzzlehttp/guzzle": "6.4.1",
+        "vlucas/phpdotenv": "4.0.0"
     },
     "authors": [
         {
