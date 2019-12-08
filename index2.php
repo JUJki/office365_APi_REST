@@ -69,9 +69,8 @@ echo 'sur nom: ' . $user->getSurname() . '<br>';
 echo 'userPrincipalName: ' . $user->getUserPrincipalName() . '<br>';
 echo 'id: ' . $user->getId() . '<br>';*/
 
-
-$clientOffice->updateOneUserById($accesToken, '02fcd2a7-9781-4d4e-a716-e54f767aaf60',['name'=>'audrey1']);
-$clientOffice->updateOneUserByPrincipalName($accesToken, 'audrey@testDevJulien.onmicrosoft.com',['mailNickname'=>'audrey12'])
-
+//$clientOffice->updateOneUserById($accesToken, '02fcd2a7-9781-4d4e-a716-e54f767aaf60',['name'=>'audrey1']);
+//$clientOffice->updateOneUserByPrincipalName($accesToken, 'audrey@testDevJulien.onmicrosoft.com',['mailNickname'=>'audrey12'])
+//$users = $clientOffice->getDeltaUsers($accesToken);
 
 ?>

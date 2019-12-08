@@ -154,6 +154,26 @@ class office365Interface
   }
 
   /**
+   * Permet de retourner les utilisateurs nouvellement créés, modifiés ou supprimés
+   * @param string $accessToken
+   * @return mixed
+   */
+  public function getDeltaUsers($accessToken) {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+    try {
+      $users = $graph->createRequest('GET', '/users/delta')
+        ->setReturnType(\Microsoft\Graph\Model\User::class)
+        ->execute();
+      return $users;
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      $this->interpretationExceptionGraph($error, 'getInfoUsers');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      $this->interpretationExceptionClient($error, 'getInfoUsers');
+    }
+  }
+
+  /**
    * Retourne un tableau des propriétés non obligatoire pour un utilisateur si elles doivent contenir une valeur
    * @param array $dataUser
    * @return array
