@@ -110,6 +110,11 @@ class office365Interface
     }
   }
 
+  /**
+   * Retourne les informations d'un utilisateur connecté
+   * @param string $accessToken
+   * @return mixed
+   */
   public function getInfoUser($accessToken)
   {
     $graph = new Microsoft\Graph\Graph();
@@ -127,6 +132,11 @@ class office365Interface
 
   }
 
+  /**
+   * Retourne une liste de tous les utlisateurs
+   * @param string $accessToken
+   * @return mixed
+   */
   public function getInfoUsers($accessToken)
   {
     $graph = new Microsoft\Graph\Graph();
@@ -143,26 +153,15 @@ class office365Interface
     }
   }
 
-  private function formatBodyCreateUser($dataUser)
+  /**
+   * Retourne un tableau des propriétés non obligatoire pour un utilisateur si elles doivent contenir une valeur
+   * @param array $dataUser
+   * @return array
+   */
+  private function bodyUserNotRequired($dataUser)
   {
+    $body = [];
     $ageGroupAvailalbe = ['null', 'minor', 'notAdult', 'adult'];
-    $userTypeAvailalbe = ['Member', 'Guest'];
-    $body = [
-      'accountEnabled' => $dataUser['enable'],
-      'displayName' => $dataUser['name'],
-      'mailNickname' => $dataUser['mailNickname'],
-      'userPrincipalName' => $dataUser['mailNickname'] . '@' . $this->domain . '.onmicrosoft.com',
-      'passwordPolicies' => 'DisablePasswordExpiration, DisableStrongPassword',
-      'preferredLanguage' => 'fr-FR',
-      'passwordProfile' => [
-        'forceChangePasswordNextSignIn' => true,
-        'password' => $dataUser['password']],
-      // 'createdDateTime' => new DateTime(),
-      'userType' => (isset($dataUser['userType']) && in_array($dataUser['userType'], $userTypeAvailalbe)) ?
-        $dataUser['userType'] :
-       'Guest'
-    ];
-
     if (isset($dataUser['age']) && in_array($dataUser['age'], $ageGroupAvailalbe)) {
       $body['ageGroup'] = $dataUser['age'];
     }
@@ -202,6 +201,68 @@ class office365Interface
     return $body;
   }
 
+  /**
+   * Retourne le body pour la mise à jour d'un utilisateur
+   * @param array $dataUser
+   * @return array
+   */
+  private function formatBodyUpdateUser($dataUser)
+  {
+    $body = [];
+    if (isset($dataUser['enable'])) {
+      $body['enable'] = $dataUser['enable'];
+    }
+    if (isset($dataUser['name'])) {
+      $body['displayName'] = $dataUser['name'];
+    }
+    if (isset($dataUser['mailNickname'])) {
+      $body['mailNickname'] = $dataUser['mailNickname'];
+      $body['userPrincipalName'] = $dataUser['mailNickname'] . '@' . $this->domain . '.onmicrosoft.com';
+    }
+    if (isset($dataUser['language'])) {
+      $body['preferredLanguage'] = $dataUser['language'];
+    }
+    if (isset($dataUser['password'])) {
+      $body['passwordProfile'] = ['password' => $dataUser['password']];
+    }
+    return array_merge($body, $this->bodyUserNotRequired($dataUser));
+
+  }
+
+  /**
+   * retourne le body pour la creation d'un utilisateur
+   * @param array $dataUser
+   * @return array
+   */
+  private function formatBodyCreateUser($dataUser)
+  {
+
+    $userTypeAvailalbe = ['Member', 'Guest'];
+    $body = [
+      'accountEnabled' => $dataUser['enable'],
+      'displayName' => $dataUser['name'],
+      'mailNickname' => $dataUser['mailNickname'],
+      'userPrincipalName' => $dataUser['mailNickname'] . '@' . $this->domain . '.onmicrosoft.com',
+      'passwordPolicies' => 'DisablePasswordExpiration, DisableStrongPassword',
+      'preferredLanguage' => 'fr-FR',
+      'passwordProfile' => [
+        'forceChangePasswordNextSignIn' => true,
+        'password' => $dataUser['password']],
+      // 'createdDateTime' => new DateTime(),
+      'userType' => (isset($dataUser['userType']) && in_array($dataUser['userType'], $userTypeAvailalbe)) ?
+        $dataUser['userType'] :
+        'Guest'
+    ];
+
+    return array_merge($body, $this->bodyUserNotRequired($dataUser));
+  }
+
+  /**
+   * Creation d'un nouvel utilisateur
+   * @param string $accessToken
+   * @param array $dataUser
+   * @return mixed
+   */
   public function createOneUser($accessToken, $dataUser)
   {
     $graph = new Microsoft\Graph\Graph();
@@ -220,12 +281,19 @@ class office365Interface
     }
   }
 
-  public function getOneUserById($accessToken, $idUser) {
+  /**
+   * Recupère un utilisateur à partir de son id
+   * @param string $accessToken
+   * @param string $idUser
+   * @return mixed
+   */
+  public function getOneUserById($accessToken, $idUser)
+  {
     $graph = new Microsoft\Graph\Graph();
     $graph->setAccessToken($accessToken);
 
     try {
-      $user = $graph->createRequest('GET', '/users/'.$idUser)
+      $user = $graph->createRequest('GET', '/users/' . $idUser)
         ->setReturnType(\Microsoft\Graph\Model\User::class)
         ->execute();
       return $user;
@@ -236,12 +304,19 @@ class office365Interface
     }
   }
 
-  public function getOneUserByPrincipalName($accessToken, $principalName) {
+  /**
+   * Recupère un utilisateur à partir de son principalName
+   * @param string $accessToken
+   * @param string $principalName
+   * @return mixed
+   */
+  public function getOneUserByPrincipalName($accessToken, $principalName)
+  {
     $graph = new Microsoft\Graph\Graph();
     $graph->setAccessToken($accessToken);
 
     try {
-      $user = $graph->createRequest('GET', '/users/'.$principalName)
+      $user = $graph->createRequest('GET', '/users/' . $principalName)
         ->setReturnType(\Microsoft\Graph\Model\User::class)
         ->execute();
       return $user;
@@ -249,6 +324,100 @@ class office365Interface
       $this->interpretationExceptionGraph($error, 'getOneUserByPrincipalName');
     } catch (\GuzzleHttp\Exception\ClientException $error) {
       $this->interpretationExceptionClient($error, 'getOneUserByPrincipalName');
+    }
+  }
+
+  /**
+   * Modifie un utilisateur à partir de son id
+   * @param string $accessToken
+   * @param string $idUser
+   * @param array $dataUser
+   * @return mixed
+   */
+  public function updateOneUserById($accessToken, $idUser, $dataUser)
+  {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+
+    try {
+      $user = $graph->createRequest('PATCH', '/users/' . $idUser)
+        ->attachBody($this->formatBodyUpdateUser($dataUser))
+        ->setReturnType(\Microsoft\Graph\Model\User::class)
+        ->execute();
+      return $user;
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      $this->interpretationExceptionGraph($error, 'updateOneUserById');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      $this->interpretationExceptionClient($error, 'updateOneUserById');
+    }
+  }
+
+  /**
+   * Modifie un utilisateur à partir de son principalName
+   * @param string $accessToken
+   * @param string $principalName
+   * @param array $dataUser
+   * @return mixed
+   */
+  public function updateOneUserByPrincipalName($accessToken, $principalName, $dataUser)
+  {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+
+    try {
+      $user = $graph->createRequest('PATCH', '/users/' . $principalName)
+        ->attachBody($this->formatBodyUpdateUser($dataUser))
+        ->setReturnType(\Microsoft\Graph\Model\User::class)
+        ->execute();
+      return $user;
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      $this->interpretationExceptionGraph($error, 'updateOneUserByPrincipalName');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      $this->interpretationExceptionClient($error, 'updateOneUserByPrincipalName');
+    }
+  }
+
+  /**
+   * Supprime un utilisateur à partir de son id
+   * @param string $accessToken
+   * @param string $idUser
+   * @return bool
+   */
+  public function deleteOneUserById($accessToken, $idUser)
+  {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+
+    try {
+      $graph->createRequest('DELETE', '/users/' . $idUser)
+        ->execute();
+      return true;
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      $this->interpretationExceptionGraph($error, 'deleteOneUserById');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      $this->interpretationExceptionClient($error, 'deleteOneUserById');
+    }
+  }
+
+  /**
+   * Supprime un utilisateur à partir de son principalName
+   * @param string $accessToken
+   * @param string $principalName
+   * @return bool
+   */
+  public function deleteOneUserByPrincipalName($accessToken, $principalName)
+  {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+
+    try {
+      $graph->createRequest('DELETE', '/users/' . $principalName)
+        ->execute();
+      return true;
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      $this->interpretationExceptionGraph($error, 'deleteOneUserByPrincipalName');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      $this->interpretationExceptionClient($error, 'deleteOneUserByPrincipalName');
     }
   }
 

@@ -27,6 +27,8 @@ $body = [
 
 ];
 //$clientOffice->createOneUser($accesToken, $body);
+//$clientOffice->deleteOneUserById($accesToken, '839c5346-5ddf-4d19-90bf-8bcddbacc023');
+//$clientOffice->deleteOneUserByPrincipalName($accesToken,'upnvalue@testDevJulien.onmicrosoft.com ');
 $users = $clientOffice->getInfoUsers($accesToken);
 /*foreach ($users as $user) {
   $businessPhone = (count($user->getBusinessPhones())> 0) ? $user->getBusinessPhones()[0] : '';
@@ -43,7 +45,7 @@ $users = $clientOffice->getInfoUsers($accesToken);
   echo 'id: ' . $user->getId() . '<br>';
 }*/
 
-$user = $clientOffice->getOneUserById($accesToken, '02fcd2a7-9781-4d4e-a716-e54f767aaf60');
+/*$user = $clientOffice->getOneUserById($accesToken, '02fcd2a7-9781-4d4e-a716-e54f767aaf60');
 echo 'name: ' . $user->getGivenName() . '<br>';
 echo 'display name: ' . $user->getDisplayName() . '<br>';
 echo 'job: ' . $user->getJobTitle() . '<br>';
@@ -65,7 +67,11 @@ echo 'location: ' . $user->getOfficeLocation() . '<br>';
 echo 'langue prefere: ' . $user->getPreferredLanguage() . '<br>';
 echo 'sur nom: ' . $user->getSurname() . '<br>';
 echo 'userPrincipalName: ' . $user->getUserPrincipalName() . '<br>';
-echo 'id: ' . $user->getId() . '<br>';
+echo 'id: ' . $user->getId() . '<br>';*/
+
+
+$clientOffice->updateOneUserById($accesToken, '02fcd2a7-9781-4d4e-a716-e54f767aaf60',['name'=>'audrey1']);
+$clientOffice->updateOneUserByPrincipalName($accesToken, 'audrey@testDevJulien.onmicrosoft.com',['mailNickname'=>'audrey12'])
 
 
 ?>
