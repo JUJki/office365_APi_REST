@@ -26,9 +26,9 @@ $body = [
   'userType' => 'Guest'
 
 ];
-$clientOffice->createOneUser($accesToken, $body);
+//$clientOffice->createOneUser($accesToken, $body);
 $users = $clientOffice->getInfoUsers($accesToken);
-foreach ($users as $user) {
+/*foreach ($users as $user) {
   $businessPhone = (count($user->getBusinessPhones())> 0) ? $user->getBusinessPhones()[0] : '';
   echo 'name: ' . $user->getGivenName() . '<br>';
   echo 'display name: ' . $user->getDisplayName() . '<br>';
@@ -41,6 +41,31 @@ foreach ($users as $user) {
   echo 'sur nom: ' . $user->getSurname() . '<br>';
   echo 'userPrincipalName: ' . $user->getUserPrincipalName() . '<br>';
   echo 'id: ' . $user->getId() . '<br>';
-}
+}*/
+
+$user = $clientOffice->getOneUserById($accesToken, '02fcd2a7-9781-4d4e-a716-e54f767aaf60');
+echo 'name: ' . $user->getGivenName() . '<br>';
+echo 'display name: ' . $user->getDisplayName() . '<br>';
+echo 'job: ' . $user->getJobTitle() . '<br>';
+echo 'mail: ' . $user->getMail() . '<br>';
+echo 'phone: ' . $user->getMobilePhone() . '<br>';
+echo 'location: ' . $user->getOfficeLocation() . '<br>';
+echo 'langue prefere: ' . $user->getPreferredLanguage() . '<br>';
+echo 'sur nom: ' . $user->getSurname() . '<br>';
+echo 'userPrincipalName: ' . $user->getUserPrincipalName() . '<br>';
+echo 'id: ' . $user->getId() . '<br>';
+$user = $clientOffice->getOneUserByPrincipalName($accesToken, 'audrey@testDevJulien.onmicrosoft.com');
+echo 'rrr';
+echo 'name: ' . $user->getGivenName() . '<br>';
+echo 'display name: ' . $user->getDisplayName() . '<br>';
+echo 'job: ' . $user->getJobTitle() . '<br>';
+echo 'mail: ' . $user->getMail() . '<br>';
+echo 'phone: ' . $user->getMobilePhone() . '<br>';
+echo 'location: ' . $user->getOfficeLocation() . '<br>';
+echo 'langue prefere: ' . $user->getPreferredLanguage() . '<br>';
+echo 'sur nom: ' . $user->getSurname() . '<br>';
+echo 'userPrincipalName: ' . $user->getUserPrincipalName() . '<br>';
+echo 'id: ' . $user->getId() . '<br>';
+
 
 ?>

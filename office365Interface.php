@@ -220,6 +220,38 @@ class office365Interface
     }
   }
 
+  public function getOneUserById($accessToken, $idUser) {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+
+    try {
+      $user = $graph->createRequest('GET', '/users/'.$idUser)
+        ->setReturnType(\Microsoft\Graph\Model\User::class)
+        ->execute();
+      return $user;
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      $this->interpretationExceptionGraph($error, 'getOneUserById');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      $this->interpretationExceptionClient($error, 'getOneUserById');
+    }
+  }
+
+  public function getOneUserByPrincipalName($accessToken, $principalName) {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+
+    try {
+      $user = $graph->createRequest('GET', '/users/'.$principalName)
+        ->setReturnType(\Microsoft\Graph\Model\User::class)
+        ->execute();
+      return $user;
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      $this->interpretationExceptionGraph($error, 'getOneUserByPrincipalName');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      $this->interpretationExceptionClient($error, 'getOneUserByPrincipalName');
+    }
+  }
+
   public function getContacts($accessToken)
   {
 
@@ -245,7 +277,6 @@ class office365Interface
   {
     $this->interpretationCodeError($error, $nameFunction);
   }
-
 
   private function interpretationExceptionGraph(\Microsoft\Graph\Exception\GraphException $error, $nameFunction)
   {
