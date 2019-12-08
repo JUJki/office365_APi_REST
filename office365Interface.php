@@ -1,5 +1,7 @@
 <?php
 
+use Microsoft\Graph\Graph;
+
 require_once 'CustomException.php';
 
 class office365Interface
@@ -10,6 +12,7 @@ class office365Interface
   private $tenantId;
   private $urlRedirect;
   private $scopes;
+  private $domain;
 
   private $OAUTH_AUTHORITY = 'https://login.microsoftonline.com/';
   private $OAUTH_AUTHORIZE_ENDPOINT = '/oauth2/v2.0/authorize';
@@ -25,10 +28,11 @@ class office365Interface
   public function __construct()
   {
     $this->app_id = $_ENV['APP_ID'];
-    $this->app_secret= $_ENV['APP_PASSWORD'];
-    $this->tenantId= $_ENV['TENANT_ID'];
-    $this->urlRedirect= $_ENV['REDIRECT_URI'];
-    $this->scopes= $_ENV['SCOPES'];
+    $this->app_secret = $_ENV['APP_PASSWORD'];
+    $this->tenantId = $_ENV['TENANT_ID'];
+    $this->urlRedirect = $_ENV['REDIRECT_URI'];
+    $this->scopes = $_ENV['SCOPES'];
+    $this->domain = $_ENV['APP_DOMAIN'];
 
     $this->clientOAuth = $this->_getOAuthClient();
   }
@@ -117,13 +121,14 @@ class office365Interface
       return $user;
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
       $this->interpretationExceptionGraph($error, 'getInfoUser');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      $this->interpretationExceptionClient($error, 'getInfoUser');
     }
 
   }
 
   public function getInfoUsers($accessToken)
   {
-    $accessToken = $this->getAccessTokenByCredential();
     $graph = new Microsoft\Graph\Graph();
     $graph->setAccessToken($accessToken);
     try {
@@ -133,6 +138,85 @@ class office365Interface
       return $users;
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
       $this->interpretationExceptionGraph($error, 'getInfoUsers');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      $this->interpretationExceptionClient($error, 'getInfoUsers');
+    }
+  }
+
+  private function formatBodyCreateUser($dataUser)
+  {
+    $ageGroupAvailalbe = ['null', 'minor', 'notAdult', 'adult'];
+    $userTypeAvailalbe = ['Member', 'Guest'];
+    $body = [
+      'accountEnabled' => $dataUser['enable'],
+      'displayName' => $dataUser['name'],
+      'mailNickname' => $dataUser['mailNickname'],
+      'userPrincipalName' => $dataUser['mailNickname'] . '@' . $this->domain . '.onmicrosoft.com',
+      'passwordPolicies' => 'DisablePasswordExpiration, DisableStrongPassword',
+      'preferredLanguage' => 'fr-FR',
+      'passwordProfile' => [
+        'forceChangePasswordNextSignIn' => true,
+        'password' => $dataUser['password']],
+      // 'createdDateTime' => new DateTime(),
+      'userType' => (isset($dataUser['userType']) && in_array($dataUser['userType'], $userTypeAvailalbe)) ?
+        $dataUser['userType'] :
+       'Guest'
+    ];
+
+    if (isset($dataUser['age']) && in_array($dataUser['age'], $ageGroupAvailalbe)) {
+      $body['ageGroup'] = $dataUser['age'];
+    }
+    if (isset($dataUser['birthday'])) {
+      $body['birthday'] = $dataUser['birthday'];
+    }
+    if (isset($dataUser['businessPhones'])) {
+      $body['businessPhones'] = $dataUser['businessPhones'];
+    }
+    if (isset($dataUser['mobilePhone'])) {
+      $body['mobilePhone'] = $dataUser['mobilePhone'];
+    }
+    if (isset($dataUser['website'])) {
+      $body['mySite'] = $dataUser['website'];
+    }
+    if (isset($dataUser['city'])) {
+      $body['ville'] = $dataUser['city'];
+    }
+    if (isset($dataUser['companyName'])) {
+      $body['companyName'] = $dataUser['companyName'];
+    }
+    if (isset($dataUser['country'])) {
+      $body['country'] = $dataUser['country'];
+    }
+    if (isset($dataUser['firstname'])) {
+      $body['givenName'] = $dataUser['firstname'];
+    }
+    if (isset($dataUser['lastname'])) {
+      $body['surname'] = $dataUser['lastname'];
+    }
+    if (isset($dataUser['job'])) {
+      $body['jobTitle'] = $dataUser['job'];
+    }
+    if (isset($dataUser['otherMails'])) {
+      $body['otherMails'] = $dataUser['otherMails'];
+    }
+    return $body;
+  }
+
+  public function createOneUser($accessToken, $dataUser)
+  {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+
+    try {
+      $user = $graph->createRequest('POST', '/users')
+        ->attachBody($this->formatBodyCreateUser($dataUser))
+        ->setReturnType(\Microsoft\Graph\Model\User::class)
+        ->execute();
+      return $user;
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      $this->interpretationExceptionGraph($error, 'createOneUser');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      $this->interpretationExceptionClient($error, 'createOneUser');
     }
   }
 
@@ -157,6 +241,12 @@ class office365Interface
     ));
   }
 
+  private function interpretationExceptionClient(\GuzzleHttp\Exception\ClientException $error, $nameFunction)
+  {
+    $this->interpretationCodeError($error, $nameFunction);
+  }
+
+
   private function interpretationExceptionGraph(\Microsoft\Graph\Exception\GraphException $error, $nameFunction)
   {
     $this->interpretationCodeError($error, $nameFunction);
@@ -171,28 +261,28 @@ class office365Interface
   {
     if ($error->getCode() === 400) {
       throw new CustomException(
-        'Office365Interface/' . $nameFunction . '/ [' . $error->getCode() . '] ' . $error->getMessage()->status,
-        GS_ERROR_400
+        'Office365Interface/' . $nameFunction . '/ [' . $error->getCode() . '] ' . $error->getMessage(),
+        OF_ERROR_400
       );
     } else if ($error->getCode() === 401) {
       throw new CustomException(
         'Office365Interface/' . $nameFunction . '/ [' . $error->getCode() . '] ' . $error->getMessage(),
-        GS_ERROR_401
+        OF_ERROR_401
       );
     } else if ($error->getCode() === 403) {
       throw new CustomException(
         'Office365Interface/' . $nameFunction . '/ [' . $error->getCode() . '] ' . $error->getMessage(),
-        GS_ERROR_403
+        OF_ERROR_403
       );
     } else if ($error->getCode() === 404) {
       throw new CustomException(
         'Office365Interface/' . $nameFunction . '/ [' . $error->getCode() . '] ' . $error->getMessage(),
-        GS_ERROR_404
+        OF_ERROR_404
       );
     } else {
       throw new CustomException(
         'Office365Interface/' . $nameFunction . '/ [' . $error->getCode() . '] ' . $error->getMessage(),
-        GS_ERROR
+        OF_ERROR
       );
     }
   }
