@@ -129,6 +129,154 @@ class office365Interface
     } catch (\GuzzleHttp\Exception\ClientException $error) {
       $this->interpretationExceptionClient($error, 'getInfoUser');
     }
+  }
+
+  public function getContactUserConnected($accessToken)
+  {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+    try {
+      $user = $graph->createRequest('GET', '/me/contacts')
+        ->setReturnType(\Microsoft\Graph\Model\Contact::class)
+        ->execute();
+      return $user;
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      $this->interpretationExceptionGraph($error, 'getContactUserConnected');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      $this->interpretationExceptionClient($error, 'getContactUserConnected');
+    }
+  }
+
+  private function _formatBodyAddContact($dataContact)
+  {
+    $contact = new \Microsoft\Graph\Model\Contact();
+    $contact->setAssistantName($dataContact['assistantName']);
+    $contact->setGivenName($dataContact['givenName']);
+    $contact->setCompanyName($dataContact['companyName']);
+    $contact->setDisplayName($dataContact['displayName']);
+    /* $email = new \Microsoft\Graph\Model\EmailAddress();
+     $email->setAddress($dataContact['email']);
+     $email->setName($dataContact['displayName']);
+     $contact->setEmailAddresses($email->getProperties());*/
+    return $contact;
+  }
+
+
+  public function addContactUserConnected($accessToken, $dataContact)
+  {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+    try {
+      $user = $graph->createRequest('POST', '/me/contacts')
+        ->attachBody($this->_formatBodyAddContact($dataContact))
+        ->setReturnType(\Microsoft\Graph\Model\Contact::class)
+        ->execute();
+      return $user;
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      $this->interpretationExceptionGraph($error, 'addContactUserConnected');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      $this->interpretationExceptionClient($error, 'addContactUserConnected');
+    }
+  }
+
+  // non testé
+  public function deleteContactUserConnected($accessToken, $idDeleteContact)
+  {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+    try {
+      $result = $graph->createRequest('DELETE', '/me/contacts/' . $idDeleteContact)
+        ->execute();
+      return $result;
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      $this->interpretationExceptionGraph($error, 'deleteContactUserConnected');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      $this->interpretationExceptionClient($error, 'deleteContactUserConnected');
+    }
+  }
+
+  // ne fonctionne pas
+  public function addContactUserById($accessToken, $id, $dataContact)
+  {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+    try {
+      $user = $graph->createRequest('POST', '/users/' . $id . '/contacts')
+        ->attachBody($this->_formatBodyAddContact($dataContact))
+        ->setReturnType(\Microsoft\Graph\Model\Contact::class)
+        ->execute();
+      return $user;
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      $this->interpretationExceptionGraph($error, 'addContactUserById');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      $this->interpretationExceptionClient($error, 'addContactUserById');
+    }
+  }
+
+  // ne fonctionne pas
+  public function addContactUserByUserPrincipalName($accessToken, $userPrincipalName, $dataContact)
+  {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+    try {
+      $user = $graph->createRequest('POST', '/users/' . $userPrincipalName . '/contacts')
+        ->attachBody($this->_formatBodyAddContact($dataContact))
+        ->setReturnType(\Microsoft\Graph\Model\Contact::class)
+        ->execute();
+      return $user;
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      $this->interpretationExceptionGraph($error, 'addContactUserByUserPrincipalName');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      $this->interpretationExceptionClient($error, 'addContactUserByUserPrincipalName');
+    }
+  }
+
+  // non testé
+  public function deleteContactUserById($accessToken, $id, $idContactDelete)
+  {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+    try {
+      $result = $graph->createRequest('POST', '/users/' . $id . '/contacts' . $idContactDelete)
+        ->execute();
+      return $result;
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      $this->interpretationExceptionGraph($error, 'addContactUserById');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      $this->interpretationExceptionClient($error, 'addContactUserById');
+    }
+  }
+
+  //non testé
+  public function deleteContactUserByUserPrincipalName($accessToken, $userPrincipalName, $idContactDelete)
+  {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+    try {
+      $result = $graph->createRequest('DELETE', '/users/' . $userPrincipalName . '/contacts/' . $idContactDelete)
+        ->execute();
+      return $result;
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      $this->interpretationExceptionGraph($error, 'deleteContactUserByUserPrincipalName');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      $this->interpretationExceptionClient($error, 'deleteContactUserByUserPrincipalName');
+    }
+  }
+
+  public function getPhotoUserConnected($accessToken)
+  {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+    try {
+      $photo = $graph->createRequest('GET', '/me/photo')
+        ->setReturnType(\Microsoft\Graph\Model\ProfilePhoto::class)
+        ->execute();
+      return $photo;
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      $this->interpretationExceptionGraph($error, 'getPhotoUserConnected');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      $this->interpretationExceptionClient($error, 'getPhotoUserConnected');
+    }
 
   }
 
@@ -158,7 +306,8 @@ class office365Interface
    * @param string $accessToken
    * @return mixed
    */
-  public function getDeltaUsers($accessToken) {
+  public function getDeltaUsers($accessToken)
+  {
     $graph = new Microsoft\Graph\Graph();
     $graph->setAccessToken($accessToken);
     try {
@@ -228,6 +377,7 @@ class office365Interface
    */
   private function formatBodyUpdateUser($dataUser)
   {
+    $user = new \Microsoft\Graph\Model\User();
     $body = [];
     if (isset($dataUser['enable'])) {
       $body['enable'] = $dataUser['enable'];
@@ -346,6 +496,23 @@ class office365Interface
       $this->interpretationExceptionClient($error, 'getOneUserByPrincipalName');
     }
   }
+
+  /*public function getOneUsersPhoto($accessToken, $id)
+  {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+
+    try {
+      $user = $graph->createRequest('GET', '/users/'.$id.'/photos')
+        ->setReturnType(\Microsoft\Graph\Model\Photo::class)
+        ->execute();
+      return $user;
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      $this->interpretationExceptionGraph($error, 'getOneUserByPrincipalName');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      $this->interpretationExceptionClient($error, 'getOneUserByPrincipalName');
+    }
+  }*/
 
   /**
    * Modifie un utilisateur à partir de son id

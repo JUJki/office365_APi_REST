@@ -29,7 +29,20 @@ $body = [
 //$clientOffice->createOneUser($accesToken, $body);
 //$clientOffice->deleteOneUserById($accesToken, '839c5346-5ddf-4d19-90bf-8bcddbacc023');
 //$clientOffice->deleteOneUserByPrincipalName($accesToken,'upnvalue@testDevJulien.onmicrosoft.com ');
-$users = $clientOffice->getInfoUsers($accesToken);
+//$users = $clientOffice->getInfoUsers($accesToken);
+//$photo = $clientOffice->getOneUsersPhoto($accesToken,'02fcd2a7-9781-4d4e-a716-e54f767aaf60');
+
+$dataContact = [
+ 'assistantName' => 'juju',
+  'givenName' => 'julien',
+  'companyName' => 'janneautcf',
+  'displayName' => 'julienjanneau',
+  'email' => 'julisssssen@testDevJulien.onmicrosoft.com',
+  'id' => 'julien@free.fr'
+];
+$contact = $clientOffice->addContactUserById($accesToken,'02fcd2a7-9781-4d4e-a716-e54f767aaf60',$dataContact);
+//$contact = $clientOffice->addContactUserByUserPrincipalName($accesToken, 'audrey12@testDevJulien.onmicrosoft.com', $dataContact);
+var_dump($contact);
 /*foreach ($users as $user) {
   $businessPhone = (count($user->getBusinessPhones())> 0) ? $user->getBusinessPhones()[0] : '';
   echo 'name: ' . $user->getGivenName() . '<br>';
@@ -44,7 +57,6 @@ $users = $clientOffice->getInfoUsers($accesToken);
   echo 'userPrincipalName: ' . $user->getUserPrincipalName() . '<br>';
   echo 'id: ' . $user->getId() . '<br>';
 }*/
-
 /*$user = $clientOffice->getOneUserById($accesToken, '02fcd2a7-9781-4d4e-a716-e54f767aaf60');
 echo 'name: ' . $user->getGivenName() . '<br>';
 echo 'display name: ' . $user->getDisplayName() . '<br>';
