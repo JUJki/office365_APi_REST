@@ -37,20 +37,6 @@ class office365Interface
     $this->clientOAuth = $this->_getOAuthClient();
   }
 
-  public function getAccessTokenByCredential()
-  {
-    $guzzle = new \GuzzleHttp\Client();
-    $token = json_decode($guzzle->post($this->_getUrlTokenPostForCredentialGrantType(), [
-      'form_params' => [
-        'client_id' => $this->app_id,
-        'client_secret' => $this->app_secret,
-        'resource' => 'https://graph.microsoft.com/',
-        'grant_type' => 'client_credentials',
-      ],
-    ])->getBody()->getContents());
-    return $token->access_token;
-  }
-
   private function _getUrlTokenPostForCredentialGrantType()
   {
     return $this->OAUTH_BASE . $this->tenantId . $this->OAUTH_TOKEN_ENDPOINTCREDENTIAL . '?api-version=' . $this->VERSION_API;
@@ -71,6 +57,204 @@ class office365Interface
     ]);
   }
 
+  /**
+   * Permet de formatter un contact graph
+   * @param array $dataContact
+   * @return \Microsoft\Graph\Model\Contact
+   */
+  private function _formatBodyAddContact($dataContact)
+  {
+    $contact = new \Microsoft\Graph\Model\Contact();
+    if (isset($dataContact['assistantName'])) {
+      $contact->setAssistantName($dataContact['assistantName']);
+    }
+    if (isset($dataContact['givenName'])) {
+      $contact->setGivenName($dataContact['givenName']);
+    }
+    if (isset($dataContact['companyName'])) {
+      $contact->setCompanyName($dataContact['companyName']);
+    }
+    if (isset($dataContact['displayName'])) {
+      $contact->setDisplayName($dataContact['displayName']);
+    }
+    /* $email = new \Microsoft\Graph\Model\EmailAddress();
+     $email->setAddress($dataContact['email']);
+     $email->setName($dataContact['displayName']);
+     $contact->setEmailAddresses($email->getProperties());*/
+    return $contact;
+  }
+
+  /**
+   * Formate l'object contact pour une mise à jour
+   * @param string $idContact
+   * @param array $dataContactUpdate
+   * @return \Microsoft\Graph\Model\Contact
+   */
+  private function _formatBodyUpdateContact($idContact, $dataContactUpdate)
+  {
+    $contact = new \Microsoft\Graph\Model\Contact();
+    $contact->setId($idContact);
+    if (isset($dataContactUpdate['assistantName'])) {
+      $contact->setAssistantName($dataContactUpdate['assistantName']);
+    }
+    if (isset($dataContactUpdate['givenName'])) {
+      $contact->setGivenName($dataContactUpdate['givenName']);
+    }
+    if (isset($dataContactUpdate['companyName'])) {
+      $contact->setCompanyName($dataContactUpdate['companyName']);
+    }
+    if (isset($dataContactUpdate['displayName'])) {
+      $contact->setDisplayName($dataContactUpdate['displayName']);
+    }
+    return $contact;
+  }
+
+  /**
+   * Retourne un tableau des propriétés non obligatoire pour un utilisateur si elles doivent contenir une valeur
+   * @param \Microsoft\Graph\Model\User $user
+   * @param array $dataUser
+   * @return \Microsoft\Graph\Model\User
+   * @throws Exception
+   */
+  private function bodyUserNotRequired(\Microsoft\Graph\Model\User $user, $dataUser)
+  {
+    $ageGroupAvailalbe = ['null', 'minor', 'notAdult', 'adult'];
+    if (isset($dataUser['age']) && in_array($dataUser['age'], $ageGroupAvailalbe)) {
+      $user->setAgeGroup($dataUser['age']);
+    }
+    if (isset($dataUser['birthday'])) {
+      $user->setBirthday(new DateTime($dataUser['birthday']));
+    }
+    if (isset($dataUser['businessPhones'])) {
+      $user->setBusinessPhones($dataUser['businessPhones']);
+    }
+    if (isset($dataUser['mobilePhone'])) {
+      $user->setMobilePhone($dataUser['mobilePhone']);
+    }
+    if (isset($dataUser['website'])) {
+      $user->setMySite($dataUser['website']);
+    }
+    if (isset($dataUser['city'])) {
+      $user->setCity($dataUser['city']);
+    }
+    if (isset($dataUser['companyName'])) {
+      $user->setCompanyName($dataUser['companyName']);
+    }
+    if (isset($dataUser['country'])) {
+      $user->setCountry($dataUser['country']);
+    }
+    if (isset($dataUser['firstname'])) {
+      $user->setGivenName($dataUser['firstname']);
+    }
+    if (isset($dataUser['lastname'])) {
+      $user->setSurname($dataUser['lastname']);
+    }
+    if (isset($dataUser['job'])) {
+      $user->setJobTitle($dataUser['job']);
+    }
+    if (isset($dataUser['otherMails'])) {
+      $user->setOtherMails($dataUser['otherMails']);
+    }
+    return $user;
+  }
+
+  private function _formatBodyUpdateUserById($idUser, $dataUpdate)
+  {
+    $user = new \Microsoft\Graph\Model\User();
+    $user->setId($idUser);
+    return $this->_formatBodyUpdateUser($user, $dataUpdate);
+  }
+
+  private function _formatBodyUpdateUserByUserPrincipalName($userPrincipaleName, $dataUpdate)
+  {
+    $user = new \Microsoft\Graph\Model\User();
+    $user->setUserPrincipalName($userPrincipaleName);
+    return $this->_formatBodyUpdateUser($user, $dataUpdate);
+  }
+
+  /**
+   * Retourne le body pour la mise à jour d'un utilisateur
+   * @param \Microsoft\Graph\Model\User $user
+   * @param array $dataUser
+   * @return \Microsoft\Graph\Model\User
+   * @throws Exception
+   */
+  private function _formatBodyUpdateUser(\Microsoft\Graph\Model\User $user, $dataUser)
+  {
+    if (isset($dataUser['enable'])) {
+      $user->setAccountEnabled($dataUser['enable']);
+    }
+    if (isset($dataUser['name'])) {
+      $user->setDisplayName($dataUser['name']);
+    }
+    if (isset($dataUser['mailNickname'])) {
+      $user->setMailNickname($dataUser['mailNickname']);
+      $user->setUserPrincipalName($dataUser['mailNickname'] . '@' . $this->domain . '.onmicrosoft.com');
+    }
+    if (isset($dataUser['language'])) {
+      $user->setPreferredLanguage($dataUser['language']);
+    }
+    if (isset($dataUser['password'])) {
+      $password = new \Microsoft\Graph\Model\PasswordProfile();
+      $password->setPassword($dataUser['password']);
+      $user->setPasswordProfile($password);
+    }
+    return $this->bodyUserNotRequired($user, $dataUser);
+  }
+
+  /**
+   * retourne le body pour la creation d'un utilisateur
+   * @param array $dataUser
+   * @return \Microsoft\Graph\Model\User
+   * @throws Exception
+   */
+  private function formatBodyCreateUser($dataUser)
+  {
+
+    $userTypeAvailalbe = ['Member', 'Guest'];
+    $enable = (isset($dataUser['enable']) && is_bool($dataUser['enable'])) ?
+      $dataUser['enable'] :
+      true;
+    $userType = (isset($dataUser['userType']) && in_array($dataUser['userType'], $userTypeAvailalbe)) ?
+      $dataUser['userType'] :
+      'Guest';
+    $user = new \Microsoft\Graph\Model\User();
+    $user->setAccountEnabled($enable);
+    $user->setDisplayName($dataUser['name']);
+    $user->setMailNickname($dataUser['mailNickname']);
+    $user->setUserPrincipalName($dataUser['mailNickname'] . '@' . $this->domain . '.onmicrosoft.com');
+    $user->setPreferredLanguage('fr-FR');
+    $user->setPasswordPolicies('DisablePasswordExpiration, DisableStrongPassword');
+    $password = new \Microsoft\Graph\Model\PasswordProfile();
+    $password->setForceChangePasswordNextSignIn(true);
+    $password->setPassword($dataUser['password']);
+    $user->setPasswordProfile($password);
+    $user->setUserType($userType);
+    return $this->bodyUserNotRequired($user, $dataUser);
+  }
+
+  /**
+   * Permet de recuperer un access token à partir d'un acces application
+   * @return string
+   */
+  public function getAccessTokenByCredential()
+  {
+    $guzzle = new \GuzzleHttp\Client();
+    $token = json_decode($guzzle->post($this->_getUrlTokenPostForCredentialGrantType(), [
+      'form_params' => [
+        'client_id' => $this->app_id,
+        'client_secret' => $this->app_secret,
+        'resource' => 'https://graph.microsoft.com/',
+        'grant_type' => 'client_credentials',
+      ],
+    ])->getBody()->getContents());
+    return $token->access_token;
+  }
+
+  /**
+   * Permet de retourner l'url d'authentification
+   * @return string
+   */
   public function getAuthorizationUrl()
   {
     return $this->clientOAuth->getAuthorizationUrl();
@@ -86,6 +270,11 @@ class office365Interface
     }
   }
 
+  /**
+   * Permet d'avoir un access token à partir d'un code
+   * @param string $code
+   * @return \League\OAuth2\Client\Token\AccessTokenInterface
+   */
   public function getAccessTokenByCode($code)
   {
     try {
@@ -99,6 +288,11 @@ class office365Interface
     }
   }
 
+  /**
+   * Permet de refresh le token
+   * @param string $token
+   * @return \League\OAuth2\Client\Token\AccessTokenInterface
+   */
   public function refreshAccessToken($token)
   {
     try {
@@ -112,18 +306,17 @@ class office365Interface
 
   /**
    * Retourne les informations d'un utilisateur connecté
-   * @param string $accessToken
-   * @return mixed
+   * @param $accessToken
+   * @return \Microsoft\Graph\Model\User
    */
   public function getInfoUser($accessToken)
   {
     $graph = new Microsoft\Graph\Graph();
     $graph->setAccessToken($accessToken);
     try {
-      $user = $graph->createRequest('GET', '/me')
+      return $graph->createRequest('GET', '/me')
         ->setReturnType(\Microsoft\Graph\Model\User::class)
         ->execute();
-      return $user;
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
       $this->interpretationExceptionGraph($error, 'getInfoUser');
     } catch (\GuzzleHttp\Exception\ClientException $error) {
@@ -131,15 +324,19 @@ class office365Interface
     }
   }
 
+  /**
+   * Permet de récuperer la list des contacts de l'utilisateur connecté
+   * @param string $accessToken
+   * @return \Microsoft\Graph\Model\Contact[]
+   */
   public function getContactUserConnected($accessToken)
   {
     $graph = new Microsoft\Graph\Graph();
     $graph->setAccessToken($accessToken);
     try {
-      $user = $graph->createRequest('GET', '/me/contacts')
+      return $graph->createRequest('GET', '/me/contacts')
         ->setReturnType(\Microsoft\Graph\Model\Contact::class)
         ->execute();
-      return $user;
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
       $this->interpretationExceptionGraph($error, 'getContactUserConnected');
     } catch (\GuzzleHttp\Exception\ClientException $error) {
@@ -147,31 +344,22 @@ class office365Interface
     }
   }
 
-  private function _formatBodyAddContact($dataContact)
-  {
-    $contact = new \Microsoft\Graph\Model\Contact();
-    $contact->setAssistantName($dataContact['assistantName']);
-    $contact->setGivenName($dataContact['givenName']);
-    $contact->setCompanyName($dataContact['companyName']);
-    $contact->setDisplayName($dataContact['displayName']);
-    /* $email = new \Microsoft\Graph\Model\EmailAddress();
-     $email->setAddress($dataContact['email']);
-     $email->setName($dataContact['displayName']);
-     $contact->setEmailAddresses($email->getProperties());*/
-    return $contact;
-  }
-
-
-  public function addContactUserConnected($accessToken, $dataContact)
+  /**
+   * Permet de mettre a jour le contact d'un utilisateur connecté via l'id du contact
+   * @param string $accessToken
+   * @param string $idContact
+   * @param array $dataContact
+   * @return \Microsoft\Graph\Model\Contact
+   */
+  public function updateOneContactUserConnected($accessToken, $idContact, $dataContact)
   {
     $graph = new Microsoft\Graph\Graph();
     $graph->setAccessToken($accessToken);
     try {
-      $user = $graph->createRequest('POST', '/me/contacts')
-        ->attachBody($this->_formatBodyAddContact($dataContact))
+      return $graph->createRequest('PATCH', '/me/contacts/' . $idContact)
+        ->attachBody($this->_formatBodyUpdateContact($idContact, $dataContact))
         ->setReturnType(\Microsoft\Graph\Model\Contact::class)
         ->execute();
-      return $user;
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
       $this->interpretationExceptionGraph($error, 'addContactUserConnected');
     } catch (\GuzzleHttp\Exception\ClientException $error) {
@@ -179,15 +367,42 @@ class office365Interface
     }
   }
 
-  // non testé
+
+  /**
+   * ermet d'ajouter un contact à un utilisateur connecté
+   * @param string $accessToken
+   * @param array $dataContact
+   * @return \Microsoft\Graph\Model\Contact
+   */
+  public function addContactUserConnected($accessToken, $dataContact)
+  {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+    try {
+      return $graph->createRequest('POST', '/me/contacts')
+        ->attachBody($this->_formatBodyAddContact($dataContact))
+        ->setReturnType(\Microsoft\Graph\Model\Contact::class)
+        ->execute();
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      $this->interpretationExceptionGraph($error, 'addContactUserConnected');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      $this->interpretationExceptionClient($error, 'addContactUserConnected');
+    }
+  }
+
+  /**
+   * Permet de la suppression d'un contact d'un utilisateur connecté
+   * @param string $accessToken
+   * @param string $idDeleteContact
+   * @return void
+   */
   public function deleteContactUserConnected($accessToken, $idDeleteContact)
   {
     $graph = new Microsoft\Graph\Graph();
     $graph->setAccessToken($accessToken);
     try {
-      $result = $graph->createRequest('DELETE', '/me/contacts/' . $idDeleteContact)
+      return $graph->createRequest('DELETE', '/me/contacts/' . $idDeleteContact)
         ->execute();
-      return $result;
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
       $this->interpretationExceptionGraph($error, 'deleteContactUserConnected');
     } catch (\GuzzleHttp\Exception\ClientException $error) {
@@ -195,17 +410,21 @@ class office365Interface
     }
   }
 
-  // ne fonctionne pas
-  public function addContactUserById($accessToken, $id, $dataContact)
+  /**
+   * Permet de recuperer les informations d'un contact par son id et par l'id de l'utilisateur auquel il appartient
+   * @param string $accessToken
+   * @param string $id
+   * @param string $idContact
+   * @return \Microsoft\Graph\Model\Contact
+   */
+  public function getOneContactUserById($accessToken, $id, $idContact)
   {
     $graph = new Microsoft\Graph\Graph();
     $graph->setAccessToken($accessToken);
     try {
-      $user = $graph->createRequest('POST', '/users/' . $id . '/contacts')
-        ->attachBody($this->_formatBodyAddContact($dataContact))
+      return $graph->createRequest('GET', '/users/' . $id . '/contacts/' . $idContact)
         ->setReturnType(\Microsoft\Graph\Model\Contact::class)
         ->execute();
-      return $user;
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
       $this->interpretationExceptionGraph($error, 'addContactUserById');
     } catch (\GuzzleHttp\Exception\ClientException $error) {
@@ -213,17 +432,21 @@ class office365Interface
     }
   }
 
-  // ne fonctionne pas
-  public function addContactUserByUserPrincipalName($accessToken, $userPrincipalName, $dataContact)
+  /**
+   * Permet de recuperer les informations d'un contact par son id et par l'userPrincipalName de l'utilisateur auquel il appartient
+   * @param string $accessToken
+   * @param string $userPrincipalName
+   * @param string $idContact
+   * @return \Microsoft\Graph\Model\Contact
+   */
+  public function getOneContactUserByUserPrincipalName($accessToken, $userPrincipalName, $idContact)
   {
     $graph = new Microsoft\Graph\Graph();
     $graph->setAccessToken($accessToken);
     try {
-      $user = $graph->createRequest('POST', '/users/' . $userPrincipalName . '/contacts')
-        ->attachBody($this->_formatBodyAddContact($dataContact))
+      return $graph->createRequest('GET', '/users/' . $userPrincipalName . '/contacts/' . $idContact)
         ->setReturnType(\Microsoft\Graph\Model\Contact::class)
         ->execute();
-      return $user;
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
       $this->interpretationExceptionGraph($error, 'addContactUserByUserPrincipalName');
     } catch (\GuzzleHttp\Exception\ClientException $error) {
@@ -231,15 +454,23 @@ class office365Interface
     }
   }
 
-  // non testé
-  public function deleteContactUserById($accessToken, $id, $idContactDelete)
+  /**
+   * Permet de mettre à jour les informations d'un contact par son id et par l'id de l'utilisateur auquel il appartient
+   * @param string $accessToken
+   * @param string $id
+   * @param string $idContact
+   * @param array $dataUpdate
+   * @return \Microsoft\Graph\Model\Contact
+   */
+  public function updateOneContactUserById($accessToken, $id, $idContact, $dataUpdate)
   {
     $graph = new Microsoft\Graph\Graph();
     $graph->setAccessToken($accessToken);
     try {
-      $result = $graph->createRequest('POST', '/users/' . $id . '/contacts' . $idContactDelete)
+      return $graph->createRequest('PATCH', '/users/' . $id . '/contacts/' . $idContact)
+        ->attachBody($this->_formatBodyUpdateContact($idContact, $dataUpdate))
+        ->setReturnType(\Microsoft\Graph\Model\Contact::class)
         ->execute();
-      return $result;
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
       $this->interpretationExceptionGraph($error, 'addContactUserById');
     } catch (\GuzzleHttp\Exception\ClientException $error) {
@@ -247,15 +478,111 @@ class office365Interface
     }
   }
 
-  //non testé
+  /**
+   * Permet de mettre à jour les informations d'un contact par son id et par l'userPrincipalName de l'utilisateur auquel il appartient
+   * @param string $accessToken
+   * @param string $userPrincipalName
+   * @param string $idContact
+   * @param array $dataUpdate
+   * @return \Microsoft\Graph\Model\Contact
+   */
+  public function updateOneContactUserByUserPrincipalName($accessToken, $userPrincipalName, $idContact, $dataUpdate)
+  {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+    try {
+      return $graph->createRequest('PATCH', '/users/' . $userPrincipalName . '/contacts/' . $idContact)
+        ->attachBody($this->_formatBodyUpdateContact($idContact, $dataUpdate))
+        ->setReturnType(\Microsoft\Graph\Model\Contact::class)
+        ->execute();
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      $this->interpretationExceptionGraph($error, 'addContactUserByUserPrincipalName');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      $this->interpretationExceptionClient($error, 'addContactUserByUserPrincipalName');
+    }
+  }
+
+  /**
+   * Permet d'ajouter un contact a un utilisateur en indiquant l'id de l'utilisateur
+   * @param string $accessToken
+   * @param string $id
+   * @param array $dataContact
+   * @return \Microsoft\Graph\Model\Contact
+   */
+  public function addContactUserById($accessToken, $id, $dataContact)
+  {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+    try {
+      return $graph->createRequest('POST', '/users/' . $id . '/contacts')
+        ->attachBody($this->_formatBodyAddContact($dataContact))
+        ->setReturnType(\Microsoft\Graph\Model\Contact::class)
+        ->execute();
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      $this->interpretationExceptionGraph($error, 'addContactUserById');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      $this->interpretationExceptionClient($error, 'addContactUserById');
+    }
+  }
+
+  /**
+   * Permet d'ajouter un contact a un utilisateur en indiquant l'userPrinicipalName de l'utilisateur
+   * @param string $accessToken
+   * @param string $userPrincipalName
+   * @param array $dataContact
+   * @return \Microsoft\Graph\Model\Contact
+   */
+  public function addContactUserByUserPrincipalName($accessToken, $userPrincipalName, $dataContact)
+  {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+    try {
+      return $graph->createRequest('POST', '/users/' . $userPrincipalName . '/contacts')
+        ->attachBody($this->_formatBodyAddContact($dataContact))
+        ->setReturnType(\Microsoft\Graph\Model\Contact::class)
+        ->execute();
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      $this->interpretationExceptionGraph($error, 'addContactUserByUserPrincipalName');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      $this->interpretationExceptionClient($error, 'addContactUserByUserPrincipalName');
+    }
+  }
+
+  /**
+   * Permet de supprimer un contact d'un utlisateur en indiquant l'id de l'utlisateur
+   * @param $accessToken
+   * @param $id
+   * @param $idContactDelete
+   * @return mixed
+   */
+  public function deleteContactUserById($accessToken, $id, $idContactDelete)
+  {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+    try {
+      return $graph->createRequest('DELETE', '/users/' . $id . '/contacts/' . $idContactDelete)
+        ->execute();
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      $this->interpretationExceptionGraph($error, 'addContactUserById');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      $this->interpretationExceptionClient($error, 'addContactUserById');
+    }
+  }
+
+  /**
+   * Permet de supprimer un contact d'un utlisateur en indiquant  l'userPrincipalNale de l'utilisateur
+   * @param string $accessToken
+   * @param string $userPrincipalName
+   * @param string $idContactDelete
+   * @return void
+   */
   public function deleteContactUserByUserPrincipalName($accessToken, $userPrincipalName, $idContactDelete)
   {
     $graph = new Microsoft\Graph\Graph();
     $graph->setAccessToken($accessToken);
     try {
-      $result = $graph->createRequest('DELETE', '/users/' . $userPrincipalName . '/contacts/' . $idContactDelete)
+      return $graph->createRequest('DELETE', '/users/' . $userPrincipalName . '/contacts/' . $idContactDelete)
         ->execute();
-      return $result;
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
       $this->interpretationExceptionGraph($error, 'deleteContactUserByUserPrincipalName');
     } catch (\GuzzleHttp\Exception\ClientException $error) {
@@ -263,21 +590,20 @@ class office365Interface
     }
   }
 
+  // non fonctionnel
   public function getPhotoUserConnected($accessToken)
   {
     $graph = new Microsoft\Graph\Graph();
     $graph->setAccessToken($accessToken);
     try {
-      $photo = $graph->createRequest('GET', '/me/photo')
+      return $graph->createRequest('GET', '/me/photo')
         ->setReturnType(\Microsoft\Graph\Model\ProfilePhoto::class)
         ->execute();
-      return $photo;
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
       $this->interpretationExceptionGraph($error, 'getPhotoUserConnected');
     } catch (\GuzzleHttp\Exception\ClientException $error) {
       $this->interpretationExceptionClient($error, 'getPhotoUserConnected');
     }
-
   }
 
   /**
@@ -290,10 +616,9 @@ class office365Interface
     $graph = new Microsoft\Graph\Graph();
     $graph->setAccessToken($accessToken);
     try {
-      $users = $graph->createRequest('GET', '/users')
+      return $graph->createRequest('GET', '/users')
         ->setReturnType(\Microsoft\Graph\Model\User::class)
         ->execute();
-      return $users;
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
       $this->interpretationExceptionGraph($error, 'getInfoUsers');
     } catch (\GuzzleHttp\Exception\ClientException $error) {
@@ -311,10 +636,9 @@ class office365Interface
     $graph = new Microsoft\Graph\Graph();
     $graph->setAccessToken($accessToken);
     try {
-      $users = $graph->createRequest('GET', '/users/delta')
+      return $graph->createRequest('GET', '/users/delta')
         ->setReturnType(\Microsoft\Graph\Model\User::class)
         ->execute();
-      return $users;
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
       $this->interpretationExceptionGraph($error, 'getInfoUsers');
     } catch (\GuzzleHttp\Exception\ClientException $error) {
@@ -322,110 +646,6 @@ class office365Interface
     }
   }
 
-  /**
-   * Retourne un tableau des propriétés non obligatoire pour un utilisateur si elles doivent contenir une valeur
-   * @param array $dataUser
-   * @return array
-   */
-  private function bodyUserNotRequired($dataUser)
-  {
-    $body = [];
-    $ageGroupAvailalbe = ['null', 'minor', 'notAdult', 'adult'];
-    if (isset($dataUser['age']) && in_array($dataUser['age'], $ageGroupAvailalbe)) {
-      $body['ageGroup'] = $dataUser['age'];
-    }
-    if (isset($dataUser['birthday'])) {
-      $body['birthday'] = $dataUser['birthday'];
-    }
-    if (isset($dataUser['businessPhones'])) {
-      $body['businessPhones'] = $dataUser['businessPhones'];
-    }
-    if (isset($dataUser['mobilePhone'])) {
-      $body['mobilePhone'] = $dataUser['mobilePhone'];
-    }
-    if (isset($dataUser['website'])) {
-      $body['mySite'] = $dataUser['website'];
-    }
-    if (isset($dataUser['city'])) {
-      $body['ville'] = $dataUser['city'];
-    }
-    if (isset($dataUser['companyName'])) {
-      $body['companyName'] = $dataUser['companyName'];
-    }
-    if (isset($dataUser['country'])) {
-      $body['country'] = $dataUser['country'];
-    }
-    if (isset($dataUser['firstname'])) {
-      $body['givenName'] = $dataUser['firstname'];
-    }
-    if (isset($dataUser['lastname'])) {
-      $body['surname'] = $dataUser['lastname'];
-    }
-    if (isset($dataUser['job'])) {
-      $body['jobTitle'] = $dataUser['job'];
-    }
-    if (isset($dataUser['otherMails'])) {
-      $body['otherMails'] = $dataUser['otherMails'];
-    }
-    return $body;
-  }
-
-  /**
-   * Retourne le body pour la mise à jour d'un utilisateur
-   * @param array $dataUser
-   * @return array
-   */
-  private function formatBodyUpdateUser($dataUser)
-  {
-    $user = new \Microsoft\Graph\Model\User();
-    $body = [];
-    if (isset($dataUser['enable'])) {
-      $body['enable'] = $dataUser['enable'];
-    }
-    if (isset($dataUser['name'])) {
-      $body['displayName'] = $dataUser['name'];
-    }
-    if (isset($dataUser['mailNickname'])) {
-      $body['mailNickname'] = $dataUser['mailNickname'];
-      $body['userPrincipalName'] = $dataUser['mailNickname'] . '@' . $this->domain . '.onmicrosoft.com';
-    }
-    if (isset($dataUser['language'])) {
-      $body['preferredLanguage'] = $dataUser['language'];
-    }
-    if (isset($dataUser['password'])) {
-      $body['passwordProfile'] = ['password' => $dataUser['password']];
-    }
-    return array_merge($body, $this->bodyUserNotRequired($dataUser));
-
-  }
-
-  /**
-   * retourne le body pour la creation d'un utilisateur
-   * @param array $dataUser
-   * @return array
-   */
-  private function formatBodyCreateUser($dataUser)
-  {
-
-    $userTypeAvailalbe = ['Member', 'Guest'];
-    $body = [
-      'accountEnabled' => $dataUser['enable'],
-      'displayName' => $dataUser['name'],
-      'mailNickname' => $dataUser['mailNickname'],
-      'userPrincipalName' => $dataUser['mailNickname'] . '@' . $this->domain . '.onmicrosoft.com',
-      'passwordPolicies' => 'DisablePasswordExpiration, DisableStrongPassword',
-      'preferredLanguage' => 'fr-FR',
-      'passwordProfile' => [
-        'forceChangePasswordNextSignIn' => true,
-        'password' => $dataUser['password']],
-      // 'createdDateTime' => new DateTime(),
-      'userType' => (isset($dataUser['userType']) && in_array($dataUser['userType'], $userTypeAvailalbe)) ?
-        $dataUser['userType'] :
-        'Guest'
-    ];
-
-    return array_merge($body, $this->bodyUserNotRequired($dataUser));
-  }
 
   /**
    * Creation d'un nouvel utilisateur
@@ -439,11 +659,10 @@ class office365Interface
     $graph->setAccessToken($accessToken);
 
     try {
-      $user = $graph->createRequest('POST', '/users')
+      return $graph->createRequest('POST', '/users')
         ->attachBody($this->formatBodyCreateUser($dataUser))
         ->setReturnType(\Microsoft\Graph\Model\User::class)
         ->execute();
-      return $user;
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
       $this->interpretationExceptionGraph($error, 'createOneUser');
     } catch (\GuzzleHttp\Exception\ClientException $error) {
@@ -463,10 +682,9 @@ class office365Interface
     $graph->setAccessToken($accessToken);
 
     try {
-      $user = $graph->createRequest('GET', '/users/' . $idUser)
+      return $graph->createRequest('GET', '/users/' . $idUser)
         ->setReturnType(\Microsoft\Graph\Model\User::class)
         ->execute();
-      return $user;
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
       $this->interpretationExceptionGraph($error, 'getOneUserById');
     } catch (\GuzzleHttp\Exception\ClientException $error) {
@@ -486,10 +704,9 @@ class office365Interface
     $graph->setAccessToken($accessToken);
 
     try {
-      $user = $graph->createRequest('GET', '/users/' . $principalName)
+      return $graph->createRequest('GET', '/users/' . $principalName)
         ->setReturnType(\Microsoft\Graph\Model\User::class)
         ->execute();
-      return $user;
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
       $this->interpretationExceptionGraph($error, 'getOneUserByPrincipalName');
     } catch (\GuzzleHttp\Exception\ClientException $error) {
@@ -527,11 +744,10 @@ class office365Interface
     $graph->setAccessToken($accessToken);
 
     try {
-      $user = $graph->createRequest('PATCH', '/users/' . $idUser)
-        ->attachBody($this->formatBodyUpdateUser($dataUser))
+      return $graph->createRequest('PATCH', '/users/' . $idUser)
+        ->attachBody($this->_formatBodyUpdateUserById($idUser, $dataUser))
         ->setReturnType(\Microsoft\Graph\Model\User::class)
         ->execute();
-      return $user;
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
       $this->interpretationExceptionGraph($error, 'updateOneUserById');
     } catch (\GuzzleHttp\Exception\ClientException $error) {
@@ -552,11 +768,10 @@ class office365Interface
     $graph->setAccessToken($accessToken);
 
     try {
-      $user = $graph->createRequest('PATCH', '/users/' . $principalName)
-        ->attachBody($this->formatBodyUpdateUser($dataUser))
+      return $graph->createRequest('PATCH', '/users/' . $principalName)
+        ->attachBody($this->_formatBodyUpdateUserByUserPrincipalName($principalName, $dataUser))
         ->setReturnType(\Microsoft\Graph\Model\User::class)
         ->execute();
-      return $user;
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
       $this->interpretationExceptionGraph($error, 'updateOneUserByPrincipalName');
     } catch (\GuzzleHttp\Exception\ClientException $error) {
@@ -606,27 +821,6 @@ class office365Interface
     } catch (\GuzzleHttp\Exception\ClientException $error) {
       $this->interpretationExceptionClient($error, 'deleteOneUserByPrincipalName');
     }
-  }
-
-  public function getContacts($accessToken)
-  {
-
-    $graph = new Graph();
-    $graph->setAccessToken($accessToken);
-
-    $user = $graph->createRequest('GET', '/me')
-      ->setReturnType(\Microsoft\Graph\Model\User::class)
-      ->execute();
-
-    $getContactsUrl = '/me/contacts?' . http_build_query($contactsQueryParams);
-    $contacts = $graph->createRequest('GET', $getContactsUrl)
-      ->setReturnType(Model\Contact::class)
-      ->execute();
-
-    return view('contacts', array(
-      'username' => $user->getDisplayName(),
-      'contacts' => $contacts
-    ));
   }
 
   private function interpretationExceptionClient(\GuzzleHttp\Exception\ClientException $error, $nameFunction)
