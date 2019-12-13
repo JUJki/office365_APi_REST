@@ -189,7 +189,11 @@ class office365Interface
     }
     if (isset($dataUser['mailNickname'])) {
       $user->setMailNickname($dataUser['mailNickname']);
-      $user->setUserPrincipalName($dataUser['mailNickname'] . '@' . $this->domain . '.onmicrosoft.com');
+      if (isset($dataUser['domainOrganisationEmail'])) {
+        $user->setUserPrincipalName($dataUser['mailNickname'] . '@' . $dataUser['domainOrganisationEmail']);
+      } else {
+        $user->setUserPrincipalName($dataUser['mailNickname'] . '@' . $this->domain . '.onmicrosoft.com');
+      }
     }
     if (isset($dataUser['language'])) {
       $user->setPreferredLanguage($dataUser['language']);
@@ -222,7 +226,11 @@ class office365Interface
     $user->setAccountEnabled($enable);
     $user->setDisplayName($dataUser['name']);
     $user->setMailNickname($dataUser['mailNickname']);
-    $user->setUserPrincipalName($dataUser['mailNickname'] . '@' . $this->domain . '.onmicrosoft.com');
+    if (isset($dataUser['domainOrganisationEmail'])) {
+      $user->setUserPrincipalName($dataUser['mailNickname'] . '@' . $dataUser['domainOrganisationEmail']);
+    } else {
+      $user->setUserPrincipalName($dataUser['mailNickname'] . '@' . $this->domain . '.onmicrosoft.com');
+    }
     $user->setPreferredLanguage('fr-FR');
     $user->setPasswordPolicies('DisablePasswordExpiration, DisableStrongPassword');
     $password = new \Microsoft\Graph\Model\PasswordProfile();
@@ -305,6 +313,26 @@ class office365Interface
   }
 
   /**
+   * Permet de recuperer les informations d'une l'organization
+   * @param string $accessToken
+   * @return \Microsoft\Graph\Model\Organization[]
+   */
+  public function getOrganization($accessToken)
+  {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+    try {
+      return $graph->createRequest('GET', '/organization')
+        ->setReturnType(\Microsoft\Graph\Model\Organization::class)
+        ->execute();
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      $this->interpretationExceptionGraph($error, 'getOrganization');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      $this->interpretationExceptionClient($error, 'getOrganization');
+    }
+  }
+
+  /**
    * Retourne les informations d'un utilisateur connecté
    * @param $accessToken
    * @return \Microsoft\Graph\Model\User
@@ -361,9 +389,9 @@ class office365Interface
         ->setReturnType(\Microsoft\Graph\Model\Contact::class)
         ->execute();
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
-      $this->interpretationExceptionGraph($error, 'addContactUserConnected');
+      $this->interpretationExceptionGraph($error, 'updateOneContactUserConnected');
     } catch (\GuzzleHttp\Exception\ClientException $error) {
-      $this->interpretationExceptionClient($error, 'addContactUserConnected');
+      $this->interpretationExceptionClient($error, 'updateOneContactUserConnected');
     }
   }
 
@@ -426,9 +454,9 @@ class office365Interface
         ->setReturnType(\Microsoft\Graph\Model\Contact::class)
         ->execute();
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
-      $this->interpretationExceptionGraph($error, 'addContactUserById');
+      $this->interpretationExceptionGraph($error, 'getOneContactUserById');
     } catch (\GuzzleHttp\Exception\ClientException $error) {
-      $this->interpretationExceptionClient($error, 'addContactUserById');
+      $this->interpretationExceptionClient($error, 'getOneContactUserById');
     }
   }
 
@@ -448,9 +476,9 @@ class office365Interface
         ->setReturnType(\Microsoft\Graph\Model\Contact::class)
         ->execute();
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
-      $this->interpretationExceptionGraph($error, 'addContactUserByUserPrincipalName');
+      $this->interpretationExceptionGraph($error, 'getOneContactUserByUserPrincipalName');
     } catch (\GuzzleHttp\Exception\ClientException $error) {
-      $this->interpretationExceptionClient($error, 'addContactUserByUserPrincipalName');
+      $this->interpretationExceptionClient($error, 'getOneContactUserByUserPrincipalName');
     }
   }
 
@@ -472,9 +500,9 @@ class office365Interface
         ->setReturnType(\Microsoft\Graph\Model\Contact::class)
         ->execute();
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
-      $this->interpretationExceptionGraph($error, 'addContactUserById');
+      $this->interpretationExceptionGraph($error, 'updateOneContactUserById');
     } catch (\GuzzleHttp\Exception\ClientException $error) {
-      $this->interpretationExceptionClient($error, 'addContactUserById');
+      $this->interpretationExceptionClient($error, 'updateOneContactUserById');
     }
   }
 
@@ -496,9 +524,9 @@ class office365Interface
         ->setReturnType(\Microsoft\Graph\Model\Contact::class)
         ->execute();
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
-      $this->interpretationExceptionGraph($error, 'addContactUserByUserPrincipalName');
+      $this->interpretationExceptionGraph($error, 'updateOneContactUserByUserPrincipalName');
     } catch (\GuzzleHttp\Exception\ClientException $error) {
-      $this->interpretationExceptionClient($error, 'addContactUserByUserPrincipalName');
+      $this->interpretationExceptionClient($error, 'updateOneContactUserByUserPrincipalName');
     }
   }
 
@@ -563,9 +591,9 @@ class office365Interface
       return $graph->createRequest('DELETE', '/users/' . $id . '/contacts/' . $idContactDelete)
         ->execute();
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
-      $this->interpretationExceptionGraph($error, 'addContactUserById');
+      $this->interpretationExceptionGraph($error, 'deleteContactUserById');
     } catch (\GuzzleHttp\Exception\ClientException $error) {
-      $this->interpretationExceptionClient($error, 'addContactUserById');
+      $this->interpretationExceptionClient($error, 'deleteContactUserById');
     }
   }
 
@@ -640,9 +668,9 @@ class office365Interface
         ->setReturnType(\Microsoft\Graph\Model\User::class)
         ->execute();
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
-      $this->interpretationExceptionGraph($error, 'getInfoUsers');
+      $this->interpretationExceptionGraph($error, 'getDeltaUsers');
     } catch (\GuzzleHttp\Exception\ClientException $error) {
-      $this->interpretationExceptionClient($error, 'getInfoUsers');
+      $this->interpretationExceptionClient($error, 'getDeltaUsers');
     }
   }
 
