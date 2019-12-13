@@ -77,10 +77,12 @@ class office365Interface
     if (isset($dataContact['displayName'])) {
       $contact->setDisplayName($dataContact['displayName']);
     }
-    /* $email = new \Microsoft\Graph\Model\EmailAddress();
-     $email->setAddress($dataContact['email']);
-     $email->setName($dataContact['displayName']);
-     $contact->setEmailAddresses($email->getProperties());*/
+    if (isset($dataContact['email']) && $dataContact['email'] !== NULL) {
+      $email = new \Microsoft\Graph\Model\EmailAddress();
+      $email->setAddress($dataContact['email']);
+      $email->setName($dataContact['displayName']);
+      $contact->setEmailAddresses([$email->getProperties()]);
+    }
     return $contact;
   }
 
@@ -105,6 +107,12 @@ class office365Interface
     }
     if (isset($dataContactUpdate['displayName'])) {
       $contact->setDisplayName($dataContactUpdate['displayName']);
+    }
+    if (isset($dataContactUpdate['email']) && $dataContactUpdate['email'] !== NULL) {
+      $email = new \Microsoft\Graph\Model\EmailAddress();
+      $email->setAddress($dataContactUpdate['email']);
+      $email->setName($dataContactUpdate['displayName']);
+      $contact->setEmailAddresses([$email->getProperties()]);
     }
     return $contact;
   }
@@ -201,7 +209,7 @@ class office365Interface
     if (isset($dataUser['password'])) {
       $password = new \Microsoft\Graph\Model\PasswordProfile();
       $password->setPassword($dataUser['password']);
-      $user->setPasswordProfile($password);
+      $user->setPasswordProfile($password->getProperties());
     }
     return $this->bodyUserNotRequired($user, $dataUser);
   }
@@ -236,7 +244,7 @@ class office365Interface
     $password = new \Microsoft\Graph\Model\PasswordProfile();
     $password->setForceChangePasswordNextSignIn(true);
     $password->setPassword($dataUser['password']);
-    $user->setPasswordProfile($password);
+    $user->setPasswordProfile($password->getProperties());
     $user->setUserType($userType);
     return $this->bodyUserNotRequired($user, $dataUser);
   }
@@ -247,7 +255,7 @@ class office365Interface
     $organisation->setId($idOrganisation);
     if (isset($dataUpdate['notificationMarketingEmail']) && $dataUpdate['notificationMarketingEmail'] !== NULL) {
       if (is_string($dataUpdate['notificationMarketingEmail'])) {
-        $dataUpdate['notificationMarketingEmail']  = [$dataUpdate['notificationMarketingEmail']];
+        $dataUpdate['notificationMarketingEmail'] = [$dataUpdate['notificationMarketingEmail']];
       }
       if (is_array($dataUpdate['notificationMarketingEmail'])) {
         $organisation->setMarketingNotificationEmails($dataUpdate['notificationMarketingEmail']);
@@ -255,7 +263,7 @@ class office365Interface
     }
     if (isset($dataUpdate['notificationTechnicalEmail']) && $dataUpdate['notificationTechnicalEmail'] !== NULL) {
       if (is_string($dataUpdate['notificationTechnicalEmail'])) {
-        $dataUpdate['notificationTechnicalEmail']  = [$dataUpdate['notificationTechnicalEmail']];
+        $dataUpdate['notificationTechnicalEmail'] = [$dataUpdate['notificationTechnicalEmail']];
       }
       if (is_array($dataUpdate['notificationTechnicalEmail'])) {
         $organisation->setTechnicalNotificationMails($dataUpdate['notificationTechnicalEmail']);
@@ -264,7 +272,7 @@ class office365Interface
     }
     if (isset($dataUpdate['notificationSecurityEmail']) && $dataUpdate['notificationSecurityEmail'] !== NULL) {
       if (is_string($dataUpdate['notificationSecurityEmail'])) {
-        $dataUpdate['notificationSecurityEmail']  = [$dataUpdate['notificationSecurityEmail']];
+        $dataUpdate['notificationSecurityEmail'] = [$dataUpdate['notificationSecurityEmail']];
       }
       if (is_array($dataUpdate['notificationSecurityEmail'])) {
         $organisation->setSecurityComplianceNotificationMails($dataUpdate['notificationSecurityEmail']);
@@ -272,7 +280,7 @@ class office365Interface
     }
     if (isset($dataUpdate['notificationSecurityPhone']) && $dataUpdate['notificationSecurityPhone'] !== NULL) {
       if (is_string($dataUpdate['notificationSecurityPhone'])) {
-        $dataUpdate['notificationSecurityPhone']  = [$dataUpdate['notificationSecurityPhone']];
+        $dataUpdate['notificationSecurityPhone'] = [$dataUpdate['notificationSecurityPhone']];
       }
       if (is_array($dataUpdate['notificationSecurityPhone'])) {
         $organisation->setSecurityComplianceNotificationPhones($dataUpdate['notificationSecurityPhone']);
@@ -391,7 +399,7 @@ class office365Interface
 
   /**
    * Retourne les informations d'un utilisateur connecté
-   * @param $accessToken
+   * @param string $accessToken
    * @return \Microsoft\Graph\Model\User
    */
   public function getInfoUser($accessToken)
@@ -738,7 +746,7 @@ class office365Interface
    * @param array $dataUser
    * @return mixed
    */
-  public function createOneUser($accessToken, $dataUser)
+  public function addOneUser($accessToken, $dataUser)
   {
     $graph = new Microsoft\Graph\Graph();
     $graph->setAccessToken($accessToken);
@@ -749,9 +757,9 @@ class office365Interface
         ->setReturnType(\Microsoft\Graph\Model\User::class)
         ->execute();
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
-      $this->interpretationExceptionGraph($error, 'createOneUser');
+      $this->interpretationExceptionGraph($error, 'addOneUser');
     } catch (\GuzzleHttp\Exception\ClientException $error) {
-      $this->interpretationExceptionClient($error, 'createOneUser');
+      $this->interpretationExceptionClient($error, 'addOneUser');
     }
   }
 
