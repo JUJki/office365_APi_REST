@@ -241,6 +241,46 @@ class office365Interface
     return $this->bodyUserNotRequired($user, $dataUser);
   }
 
+  private function _formatUpdateOrganisation($idOrganisation, $dataUpdate)
+  {
+    $organisation = new \Microsoft\Graph\Model\Organization();
+    $organisation->setId($idOrganisation);
+    if (isset($dataUpdate['notificationMarketingEmail']) && $dataUpdate['notificationMarketingEmail'] !== NULL) {
+      if (is_string($dataUpdate['notificationMarketingEmail'])) {
+        $dataUpdate['notificationMarketingEmail']  = [$dataUpdate['notificationMarketingEmail']];
+      }
+      if (is_array($dataUpdate['notificationMarketingEmail'])) {
+        $organisation->setMarketingNotificationEmails($dataUpdate['notificationMarketingEmail']);
+      }
+    }
+    if (isset($dataUpdate['notificationTechnicalEmail']) && $dataUpdate['notificationTechnicalEmail'] !== NULL) {
+      if (is_string($dataUpdate['notificationTechnicalEmail'])) {
+        $dataUpdate['notificationTechnicalEmail']  = [$dataUpdate['notificationTechnicalEmail']];
+      }
+      if (is_array($dataUpdate['notificationTechnicalEmail'])) {
+        $organisation->setTechnicalNotificationMails($dataUpdate['notificationTechnicalEmail']);
+      }
+
+    }
+    if (isset($dataUpdate['notificationSecurityEmail']) && $dataUpdate['notificationSecurityEmail'] !== NULL) {
+      if (is_string($dataUpdate['notificationSecurityEmail'])) {
+        $dataUpdate['notificationSecurityEmail']  = [$dataUpdate['notificationSecurityEmail']];
+      }
+      if (is_array($dataUpdate['notificationSecurityEmail'])) {
+        $organisation->setSecurityComplianceNotificationMails($dataUpdate['notificationSecurityEmail']);
+      }
+    }
+    if (isset($dataUpdate['notificationSecurityPhone']) && $dataUpdate['notificationSecurityPhone'] !== NULL) {
+      if (is_string($dataUpdate['notificationSecurityPhone'])) {
+        $dataUpdate['notificationSecurityPhone']  = [$dataUpdate['notificationSecurityPhone']];
+      }
+      if (is_array($dataUpdate['notificationSecurityPhone'])) {
+        $organisation->setSecurityComplianceNotificationPhones($dataUpdate['notificationSecurityPhone']);
+      }
+    }
+    return $organisation;
+  }
+
   /**
    * Permet de recuperer un access token à partir d'un acces application
    * @return string
@@ -331,6 +371,23 @@ class office365Interface
       $this->interpretationExceptionClient($error, 'getOrganization');
     }
   }
+
+  public function updateOneOrganization($accessToken, $idOrganisation, $dataUpdate)
+  {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+    try {
+      return $graph->createRequest('PATCH', '/organization/' . $idOrganisation)
+        ->attachBody($this->_formatUpdateOrganisation($idOrganisation, $dataUpdate))
+        ->setReturnType(\Microsoft\Graph\Model\Organization::class)
+        ->execute();
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      $this->interpretationExceptionGraph($error, 'getOrganization');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      $this->interpretationExceptionClient($error, 'getOrganization');
+    }
+  }
+
 
   /**
    * Retourne les informations d'un utilisateur connecté
