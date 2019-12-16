@@ -50,21 +50,97 @@ if (isset($_SESSION['access_token'])) {
     storageAndDecodeToken($clientOffice->getAccessTokenByCode($_GET['code']));
   }
 }
-$dataContact = [
-  'assistantName' => 'juju',
-  'givenName' => 'julien',
-  'companyName' => 'janneautcf',
-  'displayName' => 'julienjanneau',
-  'email' => 'julisdddssssen@testDevJulien.onmicrosoft.com',
-  'id' => 'julidddden@free.fr'
-];
-$user = $clientOffice->getInfoUser($_SESSION['access_token']);
-$contactsUser = $clientOffice->getContactUserConnected($_SESSION['access_token']);
-//$contact = $clientOffice->addContactUserConnected($_SESSION['access_token'], $dataContact);
-//var_dump($contact);
-/*foreach ($photoUser as $user) {
-  echo 'name: ' . $user->getDisplayName() . '<br>';
-}*/
-exit();
 
+
+$user = $clientOffice->getInfoUser($_SESSION['access_token']);
+echo 'User connected :<br>';
+echo '<pre>';
+var_dump($user->getProperties());
+echo '</pre>';
+$domainOrganisationEmail = '';
+$organisations = $clientOffice->getOrganization($_SESSION['access_token']);
+echo 'Organisations :</br>';
+foreach ($organisations as $organisation) {
+  echo $organisation->getDisplayName().'</br>';
+  echo '<pre>';
+  var_dump($organisation->getProperties());
+  echo '</pre>';
+  $verifiesDomains = $organisation->getVerifiedDomains();
+  foreach ($verifiesDomains as $domain) {
+    $domainOrganisationEmail = $domain['name'];
+  }
+}
+
+
+// Pour Update une organisation
+/* foreach($organisations as $organisation) {
+  if($organisation->getId() === 'fdsffsfsdfsdf') {
+    $updateOrganisation = ['notificationMarketingEmail'=> 'janneaujulien@xxxxx.fr'];
+    $clientOffice->updateOneOrganization($_SESSION['access_token'], $organisation->getId(), $updateOrganisation);
+  }
+}*/
+
+// Pour creer un utilisateur
+
+/*$bodyCreateUser = [
+  'enable'=> true,
+  'name'=> 'julien',
+  'mailNickname'=> 'julien',
+  'password'=> '~JceBdd]sssfpejn@|>H',
+  'firstname'=> 'julien',
+  'lastname'=> 'janneau',
+  'mobilePhone'=> '0663342226',
+  'job'=> 'Developpeur',
+  'otherMails' => ['juju.par@gmail.com'],
+  'userType' => 'Guest', // Guest ou Member
+];*/
+//$newUser = $clientOffice->addOneUser($_SESSION['access_token'],$bodyCreateUser);
+
+$users = $clientOffice->getInfoUsers($_SESSION['access_token']);
+echo 'Liste de tous les utilisateurs :</br>';
+foreach ($users as $user) {
+  echo '<pre>';
+  var_dump($user->getProperties());
+  echo '</pre>';
+}
+
+// suppression d'un tulisateurs depuis un compte connecté
+/*foreach($users as $user) {
+  if($user->getSurname() === 'janneau') {
+    $clientOffice->deleteContactUserConnected($_SESSION['access_token'], $user->getId());
+  }
+}*/
+
+
+// ajout de contacts
+/*$dataAddContact = [
+  'assistantName' => 'XXXXX',
+  'givenName' => 'XXXXXX',
+  'companyName' => 'XXXXXX',
+  'displayName' => 'mmmms',
+  'email' => 'XXXXXX@XXXXXX.XX'
+];*/
+// 3 methodes possibles
+//$contact = $clientOffice->addContactUserConnected($_SESSION['access_token'], $dataAddContact);
+//$contact = $clientOffice->addContactUserById($_SESSION['access_token'], $user->getId(),$dataAddContact);
+//$contact = $clientOffice->addContactUserByUserPrincipalName($_SESSION['access_token'], $user->getUserPrincipalName(),$dataAddContact);
+
+// listes des contacts connecté
+echo 'Liste de tous les contacts :</br>';
+$contactsUser = $clientOffice->getContactUserConnected($_SESSION['access_token']);
+foreach ($contactsUser as $contact) {
+  echo '<pre>';
+  var_dump($contact->getProperties());
+  echo '</pre>';
+  //$contact=$clientOffice->getOneContactUserById($_SESSION['access_token'], $user->getId(), $contact->getId());
+  //$contact=$clientOffice->getOneContactUserByUserPrincipalName($_SESSION['access_token'], $user->getUserPrincipalName(), $contact->getId());
+  //$clientOffice->deleteContactUserConnected($_SESSION['access_token'], $contact->getId());
+  //$clientOffice->deleteContactUserById($_SESSION['access_token'], $user->getId(), $contact->getId());
+  //$clientOffice->deleteContactUserByUserPrincipalName($_SESSION['access_token'], $user->getUserPrincipalName(), $contact->getId());
+  //$clientOffice->updateOneContactUserConnected($_SESSION['access_token'], $contact->getId(), ['assistantName'=> 'ZZZZZ']);
+  //$clientOffice->updateOneContactUserById($_SESSION['access_token'],$user->getId(),$contact->getId(), ['assistantName'=> 'ZZZZZ']);
+  // $clientOffice->updateOneContactUserByUserPrincipalName($_SESSION['access_token'], $user->getUserPrincipalName(),$contact->getId(), ['assistantName'=> 'ZZZZZ']);
+//
+}
+exit();
 ?>
