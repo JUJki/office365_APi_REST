@@ -87,7 +87,7 @@ class office365Interface
   }
 
   /**
-   * Formate l'object contact pour une mise à jour
+   * Formatte l'object contact pour une mise à jour
    * @param string $idContact
    * @param array $dataContactUpdate
    * @return \Microsoft\Graph\Model\Contact
@@ -118,7 +118,7 @@ class office365Interface
   }
 
   /**
-   * Retourne un tableau des propriétés non obligatoire pour un utilisateur si elles doivent contenir une valeur
+   * Retourne l'objet utilisateur modifié avec des valeurs non obligatoires
    * @param \Microsoft\Graph\Model\User $user
    * @param array $dataUser
    * @return \Microsoft\Graph\Model\User
@@ -166,6 +166,13 @@ class office365Interface
     return $user;
   }
 
+  /**
+   * Format un object user à partir de l'identifiant de l'utilisateur à modifier afin qu'il soit modifié
+   * @param string $idUser
+   * @param array $dataUpdate
+   * @return \Microsoft\Graph\Model\User
+   * @throws Exception
+   */
   private function _formatBodyUpdateUserById($idUser, $dataUpdate)
   {
     $user = new \Microsoft\Graph\Model\User();
@@ -173,6 +180,13 @@ class office365Interface
     return $this->_formatBodyUpdateUser($user, $dataUpdate);
   }
 
+  /**
+   * Format un object user à partir de l'userPrincipalName de l'utilisateur à modifier afin qu'il soit modifié
+   * @param string $userPrincipaleName
+   * @param array $dataUpdate
+   * @return \Microsoft\Graph\Model\User
+   * @throws Exception
+   */
   private function _formatBodyUpdateUserByUserPrincipalName($userPrincipaleName, $dataUpdate)
   {
     $user = new \Microsoft\Graph\Model\User();
@@ -181,7 +195,7 @@ class office365Interface
   }
 
   /**
-   * Retourne le body pour la mise à jour d'un utilisateur
+   * Retourne l'object user mis à jour
    * @param \Microsoft\Graph\Model\User $user
    * @param array $dataUser
    * @return \Microsoft\Graph\Model\User
@@ -215,7 +229,7 @@ class office365Interface
   }
 
   /**
-   * retourne le body pour la creation d'un utilisateur
+   * Retourne un object user pour la creation d'un nouveau utilisateur
    * @param array $dataUser
    * @return \Microsoft\Graph\Model\User
    * @throws Exception
@@ -249,6 +263,12 @@ class office365Interface
     return $this->bodyUserNotRequired($user, $dataUser);
   }
 
+  /**
+   * Retourne un object organisation à partir de son identifiant et avec les valeurs à mettre à jour
+   * @param string $idOrganisation
+   * @param array $dataUpdate
+   * @return \Microsoft\Graph\Model\Organization
+   */
   private function _formatUpdateOrganisation($idOrganisation, $dataUpdate)
   {
     $organisation = new \Microsoft\Graph\Model\Organization();
@@ -361,7 +381,7 @@ class office365Interface
   }
 
   /**
-   * Permet de recuperer les informations d'une l'organization
+   * Permet de recuperer les informations des organisations
    * @param string $accessToken
    * @return \Microsoft\Graph\Model\Organization[]
    */
@@ -380,6 +400,13 @@ class office365Interface
     }
   }
 
+  /**
+   * Permet de mettre à jour une organisation à partir de son identifiant
+   * @param string $accessToken
+   * @param string $idOrganisation
+   * @param array $dataUpdate
+   * @return \Microsoft\Graph\Model\Organization
+   */
   public function updateOneOrganization($accessToken, $idOrganisation, $dataUpdate)
   {
     $graph = new Microsoft\Graph\Graph();
@@ -402,7 +429,7 @@ class office365Interface
    * @param string $accessToken
    * @return \Microsoft\Graph\Model\User
    */
-  public function getInfoUser($accessToken)
+  public function getInfoUserConnected($accessToken)
   {
     $graph = new Microsoft\Graph\Graph();
     $graph->setAccessToken($accessToken);
@@ -438,6 +465,32 @@ class office365Interface
   }
 
   /**
+   * Permet de retourner les personnes classées par petinence pour un utilisateur connecté
+   * @param string $accessToken
+   * @return \Microsoft\Graph\Model\Person[]
+   */
+  public function getPeopleUserConnected($accessToken)
+  {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+    try {
+      return $graph->createRequest('GET', '/me/people')
+        ->setReturnType(\Microsoft\Graph\Model\Person::class)
+        ->execute();
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      if ($error->getCode() === 404) {
+        return [];
+      }
+      $this->interpretationExceptionGraph($error, 'getPeopleUserConnected');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      if ($error->getCode() === 404) {
+        return [];
+      }
+      $this->interpretationExceptionClient($error, 'getPeopleUserConnected');
+    }
+  }
+
+  /**
    * Permet de mettre a jour le contact d'un utilisateur connecté via l'id du contact
    * @param string $accessToken
    * @param string $idContact
@@ -462,7 +515,7 @@ class office365Interface
 
 
   /**
-   * ermet d'ajouter un contact à un utilisateur connecté
+   * Permet d'ajouter un contact à un utilisateur connecté
    * @param string $accessToken
    * @param array $dataContact
    * @return \Microsoft\Graph\Model\Contact
@@ -684,17 +737,29 @@ class office365Interface
   }
 
   // non fonctionnel
+
+  /**
+   * Permet de recuperer les informations photos d'un profil connecté
+   * @param $accessToken
+   * @return Microsoft\Graph\Model\ProfilePhoto
+   */
   public function getPhotoUserConnected($accessToken)
   {
     $graph = new Microsoft\Graph\Graph();
     $graph->setAccessToken($accessToken);
     try {
-      return $graph->createRequest('GET', '/me/photo')
+      return $graph->createRequest('GET', '/me/photo/$value')
         ->setReturnType(\Microsoft\Graph\Model\ProfilePhoto::class)
         ->execute();
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      if ($error->getCode() === 404) {
+        return false;
+      }
       $this->interpretationExceptionGraph($error, 'getPhotoUserConnected');
     } catch (\GuzzleHttp\Exception\ClientException $error) {
+      if ($error->getCode() === 404) {
+        return false;
+      }
       $this->interpretationExceptionClient($error, 'getPhotoUserConnected');
     }
   }
@@ -702,7 +767,7 @@ class office365Interface
   /**
    * Retourne une liste de tous les utlisateurs
    * @param string $accessToken
-   * @return mixed
+   * @return \Microsoft\Graph\Model\User[]
    */
   public function getInfoUsers($accessToken)
   {
@@ -722,7 +787,7 @@ class office365Interface
   /**
    * Permet de retourner les utilisateurs nouvellement créés, modifiés ou supprimés
    * @param string $accessToken
-   * @return mixed
+   * @return \Microsoft\Graph\Model\User[]
    */
   public function getDeltaUsers($accessToken)
   {
@@ -739,12 +804,11 @@ class office365Interface
     }
   }
 
-
   /**
    * Creation d'un nouvel utilisateur
    * @param string $accessToken
    * @param array $dataUser
-   * @return mixed
+   * @return \Microsoft\Graph\Model\User
    */
   public function addOneUser($accessToken, $dataUser)
   {
@@ -767,7 +831,7 @@ class office365Interface
    * Recupère un utilisateur à partir de son id
    * @param string $accessToken
    * @param string $idUser
-   * @return mixed
+   * @return \Microsoft\Graph\Model\User
    */
   public function getOneUserById($accessToken, $idUser)
   {
@@ -789,7 +853,7 @@ class office365Interface
    * Recupère un utilisateur à partir de son principalName
    * @param string $accessToken
    * @param string $principalName
-   * @return mixed
+   * @return \Microsoft\Graph\Model\User
    */
   public function getOneUserByPrincipalName($accessToken, $principalName)
   {
@@ -807,29 +871,124 @@ class office365Interface
     }
   }
 
-  /*public function getOneUsersPhoto($accessToken, $id)
+  /**
+   * Permet de retourner les personnes classées par petinence pour un utilisateur selon son identifiant
+   * @param string $accessToken
+   * @param string $idUser
+   * @return \Microsoft\Graph\Model\Person[]
+   */
+  public function getPeopleUserById($accessToken, $idUser)
+  {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+    try {
+      return $graph->createRequest('GET', '/users/' . $idUser . '/people')
+        ->setReturnType(\Microsoft\Graph\Model\Person::class)
+        ->execute();
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      if ($error->getCode() === 404) {
+        return [];
+      }
+      $this->interpretationExceptionGraph($error, 'getPeopleUserById');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      if ($error->getCode() === 404) {
+        return [];
+      }
+      $this->interpretationExceptionClient($error, 'getPeopleUserById');
+    }
+  }
+
+  /**
+   * Permet de retourner les personnes classées par petinence pour un utilisateur selon son userPrincipalName
+   * @param string $accessToken
+   * @param string $userPrincipalName
+   * @return \Microsoft\Graph\Model\Person[]
+   */
+  public function getPeopleUserByUserPrincipalName($accessToken, $userPrincipalName)
+  {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+    try {
+      return $graph->createRequest('GET', '/users/' . $userPrincipalName . '/people')
+        ->setReturnType(\Microsoft\Graph\Model\Person::class)
+        ->execute();
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      if ($error->getCode() === 404) {
+        return [];
+      }
+      $this->interpretationExceptionGraph($error, 'getPeopleUserByUserPrincipalName');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      if ($error->getCode() === 404) {
+        return [];
+      }
+      $this->interpretationExceptionClient($error, 'getPeopleUserByUserPrincipalName');
+    }
+  }
+
+  /**
+   * Recupere les photos de profils d'un utilisateurs à partir de son identifiant
+   * @param string $accessToken
+   * @param string $id
+   * @return \Microsoft\Graph\Model\ProfilePhoto
+   */
+  public function getPhotoByIdUser($accessToken, $id)
   {
     $graph = new Microsoft\Graph\Graph();
     $graph->setAccessToken($accessToken);
 
     try {
-      $user = $graph->createRequest('GET', '/users/'.$id.'/photos')
-        ->setReturnType(\Microsoft\Graph\Model\Photo::class)
+      $user = $graph->createRequest('GET', '/users/' . $id . '/photo/$value')
+        ->setReturnType(\Microsoft\Graph\Model\ProfilePhoto::class)
         ->execute();
       return $user;
     } catch (\Microsoft\Graph\Exception\GraphException $error) {
-      $this->interpretationExceptionGraph($error, 'getOneUserByPrincipalName');
+      if ($error->getCode() === 404) {
+        return false;
+      }
+      $this->interpretationExceptionGraph($error, 'getPhotoByIdUser');
     } catch (\GuzzleHttp\Exception\ClientException $error) {
-      $this->interpretationExceptionClient($error, 'getOneUserByPrincipalName');
+      if ($error->getCode() === 404) {
+        return false;
+      }
+      $this->interpretationExceptionClient($error, 'getPhotoByIdUser');
     }
-  }*/
+  }
+
+  /**
+   * Recupere les photos de profils d'un utilisateurs à partir de son userPrincipalName
+   * @param string $accessToken
+   * @param string $userPrincipalName
+   * @return \Microsoft\Graph\Model\User
+   */
+  public function getPhotoByIUserPrincipalName($accessToken, $userPrincipalName)
+  {
+    $graph = new Microsoft\Graph\Graph();
+    $graph->setAccessToken($accessToken);
+
+    try {
+      $user = $graph->createRequest('GET', '/users/' . $userPrincipalName . '/photo/$value')
+        ->setReturnType(\Microsoft\Graph\Model\ProfilePhoto::class)
+        ->execute();
+      return $user;
+    } catch (\Microsoft\Graph\Exception\GraphException $error) {
+      if ($error->getCode() === 404) {
+        return false;
+      }
+      $this->interpretationExceptionGraph($error, 'getPhotoByIUserPrincipalName');
+    } catch (\GuzzleHttp\Exception\ClientException $error) {
+      if ($error->getCode() === 404) {
+        return false;
+      }
+      $this->interpretationExceptionClient($error, 'getPhotoByIUserPrincipalName');
+    }
+  }
 
   /**
    * Modifie un utilisateur à partir de son id
    * @param string $accessToken
    * @param string $idUser
    * @param array $dataUser
-   * @return mixed
+   * @return \Microsoft\Graph\Model\User
    */
   public function updateOneUserById($accessToken, $idUser, $dataUser)
   {
@@ -853,7 +1012,7 @@ class office365Interface
    * @param string $accessToken
    * @param string $principalName
    * @param array $dataUser
-   * @return mixed
+   * @return \Microsoft\Graph\Model\User
    */
   public function updateOneUserByPrincipalName($accessToken, $principalName, $dataUser)
   {

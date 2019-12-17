@@ -14,11 +14,11 @@ $clientOffice = new office365Interface();
 $accesToken = $clientOffice->getAccessTokenByCredential();
 
 
-$organisations = $clientOffice->getOrganization($accesToken);?>
+$organisations = $clientOffice->getOrganization($accesToken); ?>
 <h1>Organisation</h1>
 <?php
-foreach($organisations as $organisation) {
-  echo $organisation->getDisplayName().'</br>';
+foreach ($organisations as $organisation) {
+  echo $organisation->getDisplayName() . '</br>';
   echo '<pre>';
   var_dump($organisation->getProperties());
   echo '</pre>';
@@ -27,25 +27,32 @@ foreach($organisations as $organisation) {
   foreach ($verifiesDomains as $domain) {
     $domainOrganisationEmail = $domain['name'];
   }
-}?>
+} ?>
 
 <h1>List des users </h1>
 <?
 $users = $clientOffice->getInfoUsers($accesToken); // ou $users = $clientOffice->getDeltaUsers($accesToken);
 foreach ($users as $user) {
 
-  $businessPhone = (count($user->getBusinessPhones())> 0) ? $user->getBusinessPhones()[0] : '';
+  $businessPhone = (count($user->getBusinessPhones()) > 0) ? $user->getBusinessPhones()[0] : '';
   echo 'name: ' . $user->getGivenName() . '<br>';
   echo 'display name: ' . $user->getDisplayName() . '<br>';
   echo 'job: ' . $user->getJobTitle() . '<br>';
   echo 'mail: ' . $user->getMail() . '<br>';
   echo 'phone: ' . $user->getMobilePhone() . '<br>';
-  echo 'business phone: ' . $businessPhone. '<br>';
+  echo 'business phone: ' . $businessPhone . '<br>';
   echo 'location: ' . $user->getOfficeLocation() . '<br>';
   echo 'langue prefere: ' . $user->getPreferredLanguage() . '<br>';
   echo 'sur nom: ' . $user->getSurname() . '<br>';
   echo 'userPrincipalName: ' . $user->getUserPrincipalName() . '<br>';
   echo 'id: ' . $user->getId() . '<br><br>';
+  $peoples = $clientOffice->getPeopleUserById($accesToken, $user->getId());
+  foreach ($peoples as $people) {
+    echo '<pre>';
+    var_dump($people->getProperties());
+    echo '</pre>';
+  }
+  // $peoples = $clientOffice->getPeopleUserByUserPrincipalName($accesToken, $user->getUserPrincipalName());
 
 
   //$clientOffice->updateOneUserById($accesToken, $user->getId(),['name'=>'zzzzz']);
@@ -63,7 +70,9 @@ foreach ($users as $user) {
   //$contact = $clientOffice->addContactUserById($accesToken,$user->getId(),$dataAddContactUser);
   //$contact = $clientOffice->addContactUserByUserPrincipalName($accesToken, $user->getUserPrincipalName(), $dataAddContactUser);
   //$user = $clientOffice->getOneUserById($accesToken, $user->getId());
-  //$clientOffice->getOneUserByPrincipalName($accesToken, $user->getUserPrincipalName());
+  //$user = $clientOffice->getOneUserByPrincipalName($accesToken, $user->getUserPrincipalName());
+  //$photo = $clientOffice->getOneUsersPhoto($accesToken,$user->getId());
+  //$photo = $clientOffice->getPhotoByIUserPrincipalName($accesToken, $user->getUserPrincipalName());
 
 }
 
@@ -82,8 +91,5 @@ foreach ($users as $user) {
   'userType' => 'Member'
 ];
 $clientOffice->addOneUser($accesToken, $bodyCreateUser);*/
-
-
-//$photo = $clientOffice->getOneUsersPhoto($accesToken,'02fcd2a7-9781-4d4e-a716-e54f767aaf60');
 
 ?>

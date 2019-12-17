@@ -52,16 +52,24 @@ if (isset($_SESSION['access_token'])) {
 }
 
 
-$user = $clientOffice->getInfoUser($_SESSION['access_token']);
+$user = $clientOffice->getInfoUserConnected($_SESSION['access_token']);
 echo 'User connected :<br>';
 echo '<pre>';
 var_dump($user->getProperties());
 echo '</pre>';
+
+$peoples = $clientOffice->getPeopleUserConnected($_SESSION['access_token']);
+foreach ($peoples as $people) {
+  echo '<pre>';
+  var_dump($people->getProperties());
+  echo '</pre>';
+}
+
 $domainOrganisationEmail = '';
 $organisations = $clientOffice->getOrganization($_SESSION['access_token']);
 echo 'Organisations :</br>';
 foreach ($organisations as $organisation) {
-  echo $organisation->getDisplayName().'</br>';
+  echo $organisation->getDisplayName() . '</br>';
   echo '<pre>';
   var_dump($organisation->getProperties());
   echo '</pre>';
@@ -69,6 +77,11 @@ foreach ($organisations as $organisation) {
   foreach ($verifiesDomains as $domain) {
     $domainOrganisationEmail = $domain['name'];
   }
+}
+
+$pictureProfil = $clientOffice->getPhotoUserConnected($_SESSION['access_token']);
+if ($pictureProfil) {
+  var_dump($pictureProfil->getProperties());
 }
 
 
